@@ -125,6 +125,14 @@
   * {
     @apply border-border outline-ring/50;
   }
+  
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
   body {
     @apply bg-background text-foreground font-poppins;
   }
@@ -142,5 +150,14 @@
   .gradient-bg {
     background: radial-gradient(ellipse at top, rgba(238, 68, 77, 0.1) 0%, transparent 50%),
       radial-gradient(ellipse at bottom right, rgba(252, 228, 229, 0.05) 0%, transparent 50%);
+  }
+
+  /* Font inheritance utility for consistent typography */
+  .font-inherit {
+    font-family: inherit;
+    font-size: inherit;
+    font-weight: inherit;
+    line-height: inherit;
+    letter-spacing: inherit;
   }
 }

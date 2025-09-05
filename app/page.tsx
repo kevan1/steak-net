@@ -104,53 +104,21 @@ export default function SteakNetLanding() {
         <div className="max-w-6xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-[65%_35%] gap-12 items-start">
             <div className="text-left">
-              <div className="text-6xl md:text-8xl mb-1">
-                <svg
-                  viewBox="0 0 800 280"
-                  className="w-full h-auto"
-                  style={{
-                    fontSize: "clamp(3rem, 8vw, 6rem)",
-                    fontFamily: "var(--font-steak)",
-                    letterSpacing: "-0.02em",
-                  }}
-                  aria-label="stake your sol with steaksol"
-                >
-                  <text
-                    x="0"
-                    y="60"
-                    fill="white"
-                    stroke="#3a2020"
-                    strokeWidth="9"
-                    strokeLinejoin="miter"
-                    strokeLinecap="butt"
-                    strokeMiterlimit="2"
-                    paintOrder="stroke"
-                    fontFamily="var(--font-steak)"
-                    fontSize="114"
-                    letterSpacing="-0.02em"
-                    dominantBaseline="hanging"
-                  >
-                    STAKE YOUR SOL
-                  </text>
-                  <text
-                    x="0"
-                    y="160"
-                    fill="white"
-                    stroke="#3a2020"
-                    strokeWidth="9"
-                    strokeLinejoin="miter"
-                    strokeLinecap="butt"
-                    strokeMiterlimit="2"
-                    paintOrder="stroke"
-                    fontFamily="var(--font-steak)"
-                    fontSize="114"
-                    letterSpacing="-0.02em"
-                    dominantBaseline="hanging"
-                  >
-                    WITH <tspan fill="var(--primary)">STEAKSOL</tspan>
-                  </text>
-                </svg>
-              </div>
+              <h1 
+                className="text-6xl md:text-8xl mb-1 font-steak text-white"
+                style={{
+                  fontSize: "clamp(3rem, 8vw, 6rem)",
+                  letterSpacing: "-0.02em",
+                  WebkitTextStroke: "9px #3a2020",
+                  WebkitTextFillColor: "currentColor",
+                  paintOrder: "stroke fill",
+                }}
+                aria-label="stake your sol with steaksol"
+              >
+                STAKE YOUR SOL
+                <br />
+                WITH <span className="text-[#ee444d] font-inherit align-baseline">STEAKSOL</span>
+              </h1>
               <p className="text-xl md:text-2xl text-muted-foreground mb-2 text-pretty font-poppins">
                 Stake SOL → Earn SOL + STEAK
               </p>
@@ -281,35 +249,19 @@ export default function SteakNetLanding() {
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
             <div id="steaksol" className="scroll-mt-24 mb-2">
-              <svg
-                viewBox="0 0 600 120"
-                className="w-full h-auto max-w-2xl mx-auto"
+              <h2 
+                className="w-full h-auto max-w-2xl mx-auto text-center font-steak text-white"
                 style={{
                   fontSize: "clamp(2rem, 6vw, 4rem)",
-                  fontFamily: "var(--font-steak)",
                   letterSpacing: "-0.02em",
+                  WebkitTextStroke: "6px #3a2020",
+                  WebkitTextFillColor: "currentColor",
+                  paintOrder: "stroke fill",
                 }}
                 aria-label="What is STEAKSOL?"
               >
-                <text
-                  x="300"
-                  y="60"
-                  fill="white"
-                  stroke="#3a2020"
-                  strokeWidth="6"
-                  strokeLinejoin="miter"
-                  strokeLinecap="butt"
-                  strokeMiterlimit="2"
-                  paintOrder="stroke"
-                  fontFamily="var(--font-steak)"
-                  fontSize="60"
-                  letterSpacing="-0.02em"
-                  dominantBaseline="middle"
-                  textAnchor="middle"
-                >
-                  What is <tspan fill="var(--primary)">STEAKSOL</tspan>?
-                </text>
-              </svg>
+                What is <span className="text-[#ee444d] font-inherit align-baseline">STEAKSOL</span>?
+              </h2>
             </div>
             <p className="text-xl text-muted-foreground max-w-4xl mx-auto text-pretty font-poppins">
               STEAKSOL is your liquid stake in the SteakNet validator. It began 1:1 with SOL, and its exchange rate only
@@ -348,35 +300,19 @@ export default function SteakNetLanding() {
       <section id="steak-token" className="py-20 px-4">
         <div className="max-w-6xl mx-auto text-center">
           <div className="mb-2">
-            <svg
-              viewBox="0 0 500 120"
-              className="w-full h-auto max-w-xl mx-auto"
+            <h2 
+              className="w-full h-auto max-w-xl mx-auto text-center font-steak text-white"
               style={{
                 fontSize: "clamp(2rem, 6vw, 4rem)",
-                fontFamily: "var(--font-steak)",
                 letterSpacing: "-0.02em",
+                WebkitTextStroke: "6px #3a2020",
+                WebkitTextFillColor: "currentColor",
+                paintOrder: "stroke fill",
               }}
               aria-label="What is STEAK?"
             >
-              <text
-                x="250"
-                y="60"
-                fill="white"
-                stroke="#3a2020"
-                strokeWidth="6"
-                strokeLinejoin="miter"
-                strokeLinecap="butt"
-                strokeMiterlimit="2"
-                paintOrder="stroke"
-                fontFamily="var(--font-steak)"
-                fontSize="60"
-                letterSpacing="-0.02em"
-                dominantBaseline="middle"
-                textAnchor="middle"
-              >
-                What is <tspan fill="var(--primary)">STEAK</tspan>?
-              </text>
-            </svg>
+              What is <span className="text-[#ee444d] font-inherit align-baseline">STEAK</span>?
+            </h2>
           </div>
           <p className="text-xl text-muted-foreground max-w-4xl mx-auto mb-4 text-pretty font-poppins">
             STEAK is the community reward token of SteakNet. Distributed every few epochs alongside staking rewards, it
@@ -402,35 +338,18 @@ export default function SteakNetLanding() {
         <div className="max-w-6xl mx-auto text-center">
           <div className="glass-card rounded-2xl p-12">
             <div className="mb-4">
-              <svg
-                viewBox="0 0 1200 120"
-                className="w-full h-auto max-w-3xl mx-auto"
+              <h2 
+                className="w-full h-auto max-w-3xl mx-auto text-center font-steak text-white text-2xl sm:text-3xl md:text-4xl leading-tight"
                 style={{
-                  fontSize: "clamp(2rem, 6vw, 4rem)",
-                  fontFamily: "var(--font-steak)",
                   letterSpacing: "-0.02em",
+                  WebkitTextStroke: "6px #3a2020",
+                  WebkitTextFillColor: "currentColor",
+                  paintOrder: "stroke fill",
                 }}
                 aria-label="Stake Sol. Earn Sol. Earn Steak."
               >
-                <text
-                  x="600"
-                  y="60"
-                  fill="white"
-                  stroke="#3a2020"
-                  strokeWidth="6"
-                  strokeLinejoin="miter"
-                  strokeLinecap="butt"
-                  strokeMiterlimit="2"
-                  paintOrder="stroke"
-                  fontFamily="var(--font-steak)"
-                  fontSize="63"
-                  letterSpacing="-0.02em"
-                  dominantBaseline="middle"
-                  textAnchor="middle"
-                >
-                  Stake Sol. Earn Sol. Earn <tspan fill="var(--primary)">Steak.</tspan>
-                </text>
-              </svg>
+                Stake Sol. Earn Sol. Earn <span className="text-[#ee444d] font-inherit align-baseline">Steak.</span>
+              </h2>
             </div>
             <Button size="lg" className="text-lg px-8 py-6 font-poppins" onClick={() => scrollToSection("hero")}>
               Swap to STEAKSOL
