@@ -59,7 +59,7 @@ COINGECKO_API_KEY=your_coingecko_api_key
 **Sanctum API Key:**
 - Visit [Sanctum.so](https://sanctum.so/)
 - Sign up and get your API key
-- Or use the default for testing: `REDACTED`
+- **Required**: Set `NEXT_PUBLIC_SANCTUM_API_KEY` in your `.env.local` file
 
 **Premium Solana RPC (Recommended):**
 - [Helius](https://www.helius.dev/) - Free tier available

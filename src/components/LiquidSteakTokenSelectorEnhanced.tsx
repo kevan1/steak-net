@@ -31,7 +31,11 @@ interface TokenSelectorProps {
 
 import { SANCTUM_API_BASE } from '@/src/types';
 
-const API_KEY = process.env.NEXT_PUBLIC_SANCTUM_API_KEY || 'REDACTED';
+const API_KEY = process.env.NEXT_PUBLIC_SANCTUM_API_KEY;
+
+if (!API_KEY) {
+  throw new Error('NEXT_PUBLIC_SANCTUM_API_KEY environment variable is required');
+}
 
 const LiquidSteakTokenSelectorEnhanced: React.FC<TokenSelectorProps> = ({ 
   onTokenSelected, 

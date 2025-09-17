@@ -1,6 +1,10 @@
 import { LSTToken, SwapQuote, SwapError, SANCTUM_API_BASE } from '@/src/types';
 
-const SANCTUM_API_KEY = process.env.NEXT_PUBLIC_SANCTUM_API_KEY || 'REDACTED';
+const SANCTUM_API_KEY = process.env.NEXT_PUBLIC_SANCTUM_API_KEY;
+
+if (!SANCTUM_API_KEY) {
+  throw new Error('NEXT_PUBLIC_SANCTUM_API_KEY environment variable is required');
+}
 
 class SanctumApiService {
   private baseUrl = SANCTUM_API_BASE;
