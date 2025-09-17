@@ -3,11 +3,11 @@
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import LiquidSteakTokenSelectorCompact from "@/src/components/LiquidSteakTokenSelectorCompact"
+import ClientOnly from "@/src/components/ClientOnly"
 
 export default function SteakNetLanding() {
   const [isNavBlurred, setIsNavBlurred] = useState(false)
-  const [stakeAmount, setStakeAmount] = useState("")
-  const [receiveAmount, setReceiveAmount] = useState("0")
 
   const strokeWidth = 9
   const letterSpacing = "-0.02em"
@@ -20,10 +20,6 @@ export default function SteakNetLanding() {
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
 
-  useEffect(() => {
-    const amount = Number.parseFloat(stakeAmount) || 0
-    setReceiveAmount(amount.toString())
-  }, [stakeAmount])
 
   const scrollToSection = (sectionId: string) => {
     const element = document.getElementById(sectionId)
@@ -141,77 +137,21 @@ export default function SteakNetLanding() {
             </div>
             <div className="w-full lg:flex lg:justify-start">
               <div className="w-full lg:max-w-sm">
-                <Card className="glass-card rounded-2xl p-5 bg-card/50 backdrop-blur-sm py-5 px-5 my-11">
-                  <CardContent className="p-0 space-y-3">
-                    {/* Stake SOL Section */}
-                    <div className="space-y-3">
-                      <label className="text-sm text-muted-foreground font-medium font-poppins">Stake SOL</label>
-                      <div className="bg-background/80 rounded-xl p-3 space-y-2">
-                        <div className="flex items-center justify-between">
-                          <input
-                            type="number"
-                            placeholder="0.0"
-                            value={stakeAmount}
-                            onChange={(e) => setStakeAmount(e.target.value)}
-                            className="bg-transparent text-3xl font-bold text-foreground placeholder:text-muted-foreground border-none outline-none w-full font-poppins"
-                          />
-                          <div className="flex items-center gap-2 bg-primary/10 rounded-lg px-3 py-2">
-                            <div className="w-6 h-6 rounded-full bg-gradient-to-r from-purple-500 to-blue-500 flex items-center justify-center">
-                              <span className="text-white text-xs font-bold font-poppins">S</span>
-                            </div>
-                            <span className="text-foreground font-medium font-poppins">SOL</span>
-                          </div>
-                        </div>
-                        <div className="text-sm text-muted-foreground font-poppins">
-                          ~${(Number.parseFloat(stakeAmount) * 200 || 0).toFixed(2)}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Arrow/Divider */}
-                    <div className="flex justify-center py-1">
-                      <div className="w-8 h-8 rounded-full bg-background border-2 border-border flex items-center justify-center">
-                        <svg
-                          className="w-4 h-4 text-muted-foreground"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M19 14l-7 7m0 0l-7-7m7 7V3"
-                          />
-                        </svg>
-                      </div>
-                    </div>
-
-                    {/* Receive Section */}
-                    <div className="space-y-3">
-                      <label className="text-sm text-muted-foreground font-medium font-poppins">Receive</label>
-                      <div className="bg-background/80 rounded-xl p-3 space-y-2">
-                        <div className="flex items-center justify-between">
-                          <div className="text-3xl font-bold text-foreground font-poppins">{receiveAmount}</div>
-                          <div className="flex items-center gap-2 bg-primary/10 rounded-lg px-3 py-2">
-                            <div className="w-6 h-6 rounded-full bg-gradient-to-r from-orange-500 to-red-500 flex items-center justify-center">
-                              <span className="text-white text-xs font-bold font-poppins">S</span>
-                            </div>
-                            <span className="text-foreground font-medium font-poppins">STEAKSOL</span>
-                          </div>
-                        </div>
-                        <div className="text-sm text-muted-foreground font-poppins">
-                          ~${(Number.parseFloat(receiveAmount) * 200 || 0).toFixed(2)}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Connect Wallet Button */}
-                    <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground py-5 text-lg font-medium rounded-xl font-poppins">
-                      Connect Wallet
-                    </Button>
-                  </CardContent>
-                </Card>
+                <ClientOnly fallback={
+                  <Card className="glass-card rounded-2xl p-5 bg-card/50 backdrop-blur-sm py-5 px-5 my-11">
+                    <CardContent className="p-0 space-y-3 text-center py-8">
+                      <div className="loading-spinner mx-auto mb-4"></div>
+                      <p className="text-muted-foreground font-poppins">Loading STEAK.NET...</p>
+                    </CardContent>
+                  </Card>
+                }>
+                  <LiquidSteakTokenSelectorCompact 
+                    onTokenSelected={(token) => {
+                      // Token selected
+                    }}
+                    className=""
+                  />
+                </ClientOnly>
               </div>
             </div>
           </div>
