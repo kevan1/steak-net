@@ -119,11 +119,12 @@ const LiquidSteakTokenSelectorEnhanced: React.FC<TokenSelectorProps> = ({
         balance: '0'
       };
 
-      // Sort tokens alphabetically by name
+      // Sort tokens alphabetically by name and filter out Sanctum Automated tokens
       const sortedTokens = [
         solToken,
         ...tokenList
           .filter((token: LSTToken) => token.symbol !== 'SOL') // Remove any duplicate SOL
+          .filter((token: LSTToken) => !token.name.includes('(Sanctum Automated)')) // Remove Sanctum Automated tokens
           .sort((a: LSTToken, b: LSTToken) => a.name.localeCompare(b.name))
       ];
 
@@ -288,7 +289,7 @@ const LiquidSteakTokenSelectorEnhanced: React.FC<TokenSelectorProps> = ({
                   <input
                     value={swapAmount}
                     onChange={(e) => setSwapAmount(e.target.value)}
-                    placeholder="0.0"
+                    placeholder="0"
                     className="bg-transparent text-2xl sm:text-3xl lg:text-4xl font-bold text-white border-none outline-none placeholder:text-gray-500 focus:outline-none focus:ring-0 flex-1 min-w-0"
                     style={{ 
                       background: 'transparent',
@@ -328,7 +329,7 @@ const LiquidSteakTokenSelectorEnhanced: React.FC<TokenSelectorProps> = ({
                       selectedToken.symbol === 'SOL' ? solPrice : (solPrice * (selectedToken.exchangeRate || 1))
                     ))
                   ) : (
-                    '~$0.00'
+                    '~$0'
                   )}
                 </div>
               </div>
@@ -389,7 +390,7 @@ const LiquidSteakTokenSelectorEnhanced: React.FC<TokenSelectorProps> = ({
                       steaksolPrice // Use STEAKSOL price for receive section
                     ))
                   ) : (
-                    '~$0.00'
+                    '~$0'
                   )}
                 </div>
               </div>

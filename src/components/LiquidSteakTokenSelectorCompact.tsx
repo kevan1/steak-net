@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
-import { Search, ChevronRight, ChevronDown, AlertCircle, X } from 'lucide-react';
+import { Search, ChevronRight, ArrowUpDown, AlertCircle, X } from 'lucide-react';
 import { useSwap } from '@/src/hooks/useSwap';
 import { useUSDPrices } from '@/src/hooks/useUSDPrices';
 import { STEAKSOL_MINT } from '@/src/types';
@@ -53,6 +53,8 @@ const LiquidSteakTokenSelectorCompact: React.FC<TokenSelectorProps> = ({
   const [showTokenList, setShowTokenList] = useState(false);
   const [swapAmount, setSwapAmount] = useState<string>('');
   const [showTransactionModal, setShowTransactionModal] = useState(false);
+  const [isReversed, setIsReversed] = useState(false);
+  const [tokenBalances, setTokenBalances] = useState<{[key: string]: number}>({});
 
   // Swap functionality
   const { 
@@ -119,11 +121,12 @@ const LiquidSteakTokenSelectorCompact: React.FC<TokenSelectorProps> = ({
         balance: '0'
       };
 
-      // Sort tokens alphabetically by name
+      // Sort tokens alphabetically by name and filter out Sanctum Automated tokens
       const sortedTokens = [
         solToken,
         ...tokenList
           .filter((token: LSTToken) => token.symbol !== 'SOL') // Remove any duplicate SOL
+          .filter((token: LSTToken) => !token.name.includes('(Sanctum Automated)')) // Remove Sanctum Automated tokens
           .sort((a: LSTToken, b: LSTToken) => a.name.localeCompare(b.name))
       ];
 
@@ -219,7 +222,11 @@ const LiquidSteakTokenSelectorCompact: React.FC<TokenSelectorProps> = ({
     clearError();
 
     try {
-      await swapTokens(selectedToken, STEAKSOL_TOKEN, swapAmount);
+      // Determine from and to tokens based on swap direction
+      const fromToken = isReversed ? STEAKSOL_TOKEN : selectedToken;
+      const toToken = isReversed ? selectedToken : STEAKSOL_TOKEN;
+      
+      await swapTokens(fromToken, toToken, swapAmount);
     } catch (err) {
       console.error('Swap failed:', err);
     }
@@ -229,6 +236,109 @@ const LiquidSteakTokenSelectorCompact: React.FC<TokenSelectorProps> = ({
   const handleCloseTokenList = () => {
     setShowTokenList(false);
     setSearchTerm('');
+  };
+
+  // Handle swap direction toggle
+  const handleSwapDirection = () => {
+    setIsReversed(!isReversed);
+    setSwapAmount(''); // Clear amount when swapping direction
+  };
+
+  // Fetch token balances
+  const fetchTokenBalance = async (tokenMint: string) => {
+    if (!publicKey || !connected) return 0;
+    
+    const rpcUrl = process.env.NEXT_PUBLIC_SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com';
+    
+    try {
+      // For SOL balance
+      if (tokenMint === 'So11111111111111111111111111111111111111112') {
+        const response = await fetch(rpcUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'getBalance',
+            params: [publicKey.toString()]
+          })
+        });
+        
+        const data = await response.json();
+        if (data.result && data.result.value !== undefined) {
+          const balance = data.result.value / 1000000000; // Convert lamports to SOL
+          return balance;
+        }
+      } else {
+        // For SPL tokens
+        const response = await fetch(rpcUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'getTokenAccountsByOwner',
+            params: [
+              publicKey.toString(),
+              {
+                mint: tokenMint
+              },
+              {
+                encoding: 'jsonParsed'
+              }
+            ]
+          })
+        });
+        
+        const data = await response.json();
+        if (data.result && data.result.value && data.result.value.length > 0) {
+          const balance = data.result.value[0].account.data.parsed.info.tokenAmount.uiAmount;
+          return balance || 0;
+        }
+      }
+      
+      return 0;
+    } catch (error) {
+      console.error('Error fetching token balance:', error);
+      return 0;
+    }
+  };
+
+  // Update balances when wallet connects or selected token changes
+  useEffect(() => {
+    const updateBalances = async () => {
+      if (!connected || !publicKey || !selectedToken) return;
+      
+      const balance = await fetchTokenBalance(selectedToken.mint);
+      const steaksolBalance = await fetchTokenBalance(STEAKSOL_TOKEN.mint);
+      
+      setTokenBalances({
+        [selectedToken.mint]: balance,
+        [STEAKSOL_TOKEN.mint]: steaksolBalance
+      });
+    };
+    
+    updateBalances();
+  }, [connected, publicKey, selectedToken]);
+
+  // Get current token balance
+  const getCurrentTokenBalance = () => {
+    const currentToken = isReversed ? STEAKSOL_TOKEN : selectedToken;
+    if (!currentToken || !connected) return 0;
+    return tokenBalances[currentToken.mint] || 0;
+  };
+
+  // Format balance display
+  const formatBalance = (balance: number, symbol: string) => {
+    if (balance === 0) return `0.00 ${symbol}`;
+    if (balance < 0.000001) return `${balance.toExponential(3)} ${symbol}`;
+    if (balance < 1) return `${balance.toFixed(4)} ${symbol}`;
+    if (balance < 1000) return `${balance.toFixed(4)} ${symbol}`;
+    return `${balance.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${symbol}`;
   };
 
   return (
@@ -313,85 +423,118 @@ const LiquidSteakTokenSelectorCompact: React.FC<TokenSelectorProps> = ({
           {/* From Section */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <label className="text-sm text-muted-foreground font-medium font-poppins">From</label>
-              {selectedToken && (
-                <button
-                  onClick={handleSearchClick}
-                  className="text-xs text-primary hover:text-primary/80 font-poppins"
-                >
-                  Change
-                </button>
-              )}
+              <label className="text-sm text-muted-foreground font-medium font-poppins">
+                {isReversed ? 'STEAKSOL' : (selectedToken?.name || 'From')}
+              </label>
             </div>
             <div className="bg-background/80 rounded-xl p-3 space-y-2">
               <div className="flex items-center justify-between">
                 <input
-                  placeholder="0.0"
+                  placeholder="0"
                   value={swapAmount}
                   onChange={(e) => setSwapAmount(e.target.value)}
                   className="bg-transparent text-3xl font-bold text-foreground placeholder:text-muted-foreground border-none outline-none w-full font-poppins"
                 />
-                <div className="flex items-center gap-3 bg-primary/10 rounded-xl px-3 py-2">
-                  {selectedToken?.logoUri && (
-                    <img 
-                      src={selectedToken.logoUri} 
-                      alt={selectedToken.symbol}
-                      className="w-6 h-6 rounded-full flex-shrink-0"
-                    />
-                  )}
+                <button
+                  onClick={!isReversed ? handleSearchClick : undefined}
+                  className={`flex items-center gap-3 bg-primary/10 rounded-xl px-3 py-2 ${!isReversed ? 'hover:bg-primary/20 cursor-pointer transition-colors' : 'cursor-default'}`}
+                  disabled={isReversed}
+                >
+                  <img 
+                    src={isReversed ? STEAKSOL_TOKEN.logoUri : selectedToken?.logoUri} 
+                    alt={isReversed ? 'STEAKSOL' : selectedToken?.symbol}
+                    className="w-6 h-6 rounded-full flex-shrink-0"
+                  />
                   <span className="text-foreground font-medium font-poppins whitespace-nowrap">
-                    {selectedToken?.symbol || 'SOL'}
+                    {isReversed ? 'STEAKSOL' : (selectedToken?.symbol || 'SOL')}
                   </span>
-                </div>
+                </button>
               </div>
               <div className="text-sm text-muted-foreground font-poppins">
-                {priceLoading ? (
-                  <span className="flex items-center gap-1">
-                    <div className="w-3 h-3 border border-gray-400 border-t-transparent rounded-full animate-spin"></div>
-                    Loading price...
-                  </span>
-                ) : swapAmount && parseFloat(swapAmount) > 0 && selectedToken ? (
-                  formatUSD(calculateUSDValue(
-                    parseFloat(swapAmount), 
-                    selectedToken.symbol === 'SOL' ? solPrice : (solPrice * (selectedToken.exchangeRate || 1))
-                  ))
-                ) : (
-                  '~$0.00'
-                )}
+                <div className="flex items-center justify-between">
+                  <div>
+                    {priceLoading ? (
+                      <span className="flex items-center gap-1">
+                        <div className="w-3 h-3 border border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+                        Loading price...
+                      </span>
+                    ) : swapAmount && parseFloat(swapAmount) > 0 && selectedToken ? (
+                      formatUSD(calculateUSDValue(
+                        parseFloat(swapAmount), 
+                        isReversed ? steaksolPrice : (selectedToken.symbol === 'SOL' ? solPrice : (solPrice * (selectedToken.exchangeRate || 1)))
+                      ))
+                    ) : (
+                      '~$0'
+                    )}
+                  </div>
+                  {connected && (
+                    <div className="flex items-center gap-2">
+                      <span>{formatBalance(getCurrentTokenBalance(), isReversed ? 'STEAKSOL' : (selectedToken?.symbol || 'SOL'))}</span>
+                      <button
+                        onClick={() => setSwapAmount(getCurrentTokenBalance().toString())}
+                        className="text-xs text-primary hover:text-primary/80 transition-colors bg-primary/10 px-2 py-1 rounded"
+                        disabled={getCurrentTokenBalance() === 0}
+                      >
+                        MAX
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
 
           {/* Arrow/Divider */}
           <div className="flex justify-center py-1">
-            <div className="w-8 h-8 rounded-full bg-background border-2 border-border flex items-center justify-center">
-              <ChevronDown className="w-4 h-4 text-muted-foreground" />
-            </div>
+            <button 
+              onClick={handleSwapDirection}
+              className="w-8 h-8 rounded-full bg-background border-2 border-border flex items-center justify-center hover:bg-primary/20 hover:border-primary/30 transition-all duration-200 cursor-pointer"
+            >
+              <ArrowUpDown className="w-4 h-4 text-muted-foreground hover:text-primary transition-colors" />
+            </button>
           </div>
 
           {/* To Section */}
           <div className="space-y-3">
-            <label className="text-sm text-muted-foreground font-medium font-poppins">To</label>
+            <div className="flex items-center justify-between">
+              <label className="text-sm text-muted-foreground font-medium font-poppins">
+                {isReversed ? (selectedToken?.name || 'To') : 'STEAKSOL'}
+              </label>
+            </div>
             <div className="bg-background/80 rounded-xl p-3 space-y-2">
               <div className="flex items-center justify-between">
                 <div className="text-3xl font-bold text-foreground font-poppins">
                   {swapAmount && parseFloat(swapAmount) > 0 && selectedToken && solPrice && steaksolPrice
                     ? (() => {
-                        const inputUSDValue = parseFloat(swapAmount) * (selectedToken.symbol === 'SOL' ? solPrice : (solPrice * (selectedToken.exchangeRate || 1)));
-                        const steaksolAmount = (inputUSDValue * 0.98) / steaksolPrice; // 2% slippage buffer
-                        return steaksolAmount.toFixed(6);
+                        if (isReversed) {
+                          // STEAKSOL → Selected Token
+                          const inputUSDValue = parseFloat(swapAmount) * steaksolPrice;
+                          const outputAmount = (inputUSDValue * 0.98) / (selectedToken.symbol === 'SOL' ? solPrice : (solPrice * (selectedToken.exchangeRate || 1)));
+                          return outputAmount.toFixed(6);
+                        } else {
+                          // Selected Token → STEAKSOL
+                          const inputUSDValue = parseFloat(swapAmount) * (selectedToken.symbol === 'SOL' ? solPrice : (solPrice * (selectedToken.exchangeRate || 1)));
+                          const steaksolAmount = (inputUSDValue * 0.98) / steaksolPrice;
+                          return steaksolAmount.toFixed(6);
+                        }
                       })()
                     : '0'
                   }
                 </div>
-                <div className="flex items-center gap-3 bg-primary/10 rounded-xl px-3 py-2">
+                <button
+                  onClick={isReversed ? handleSearchClick : undefined}
+                  className={`flex items-center gap-3 bg-primary/10 rounded-xl px-3 py-2 ${isReversed ? 'hover:bg-primary/20 cursor-pointer transition-colors' : 'cursor-default'}`}
+                  disabled={!isReversed}
+                >
                   <img 
-                    src={STEAKSOL_TOKEN.logoUri} 
-                    alt="STEAKSOL"
+                    src={isReversed ? selectedToken?.logoUri : STEAKSOL_TOKEN.logoUri} 
+                    alt={isReversed ? selectedToken?.symbol : 'STEAKSOL'}
                     className="w-6 h-6 rounded-full flex-shrink-0"
                   />
-                  <span className="text-foreground font-medium font-poppins whitespace-nowrap">STEAKSOL</span>
-                </div>
+                  <span className="text-foreground font-medium font-poppins whitespace-nowrap">
+                    {isReversed ? (selectedToken?.symbol || 'SOL') : 'STEAKSOL'}
+                  </span>
+                </button>
               </div>
               <div className="text-sm text-muted-foreground font-poppins">
                 {priceLoading ? (
@@ -401,11 +544,11 @@ const LiquidSteakTokenSelectorCompact: React.FC<TokenSelectorProps> = ({
                   </span>
                 ) : swapAmount && parseFloat(swapAmount) > 0 && selectedToken ? (
                   formatUSD(calculateUSDValue(
-                    parseFloat(swapAmount) * 0.98, // 2% slippage buffer
-                    steaksolPrice // Use STEAKSOL price for receive section
+                    parseFloat(swapAmount) * 0.98,
+                    isReversed ? (selectedToken.symbol === 'SOL' ? solPrice : (solPrice * (selectedToken.exchangeRate || 1))) : steaksolPrice
                   ))
                 ) : (
-                  '~$0.00'
+                  '~$0'
                 )}
               </div>
             </div>
@@ -446,7 +589,7 @@ const LiquidSteakTokenSelectorCompact: React.FC<TokenSelectorProps> = ({
                 ) : !swapAmount || parseFloat(swapAmount) <= 0 ? (
                   'Enter amount'
                 ) : (
-                  `Swap ${selectedToken?.symbol} → STEAKSOL`
+                  `Swap ${isReversed ? 'STEAKSOL' : selectedToken?.symbol} → ${isReversed ? selectedToken?.symbol : 'STEAKSOL'}`
                 )}
               </button>
             )}
@@ -467,8 +610,8 @@ const LiquidSteakTokenSelectorCompact: React.FC<TokenSelectorProps> = ({
         isOpen={showTransactionModal}
         onClose={() => setShowTransactionModal(false)}
         transactionStatus={transactionStatus || { status: 'idle' }}
-        fromToken={selectedToken?.symbol}
-        toToken="STEAKSOL"
+        fromToken={isReversed ? 'STEAKSOL' : selectedToken?.symbol}
+        toToken={isReversed ? selectedToken?.symbol : 'STEAKSOL'}
         amount={swapAmount}
       />
     </div>

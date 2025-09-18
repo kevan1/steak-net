@@ -73,7 +73,7 @@ const WalletContextProvider: FC<Props> = ({ children }) => {
     <ConnectionProvider endpoint={endpoint}>
       <WalletProvider 
         wallets={wallets} 
-        autoConnect={false}
+        autoConnect={true}
         onError={(error) => {
           console.warn('Wallet connection error:', error);
         }}
