@@ -3,14 +3,10 @@
 import { FC, ReactNode, useMemo } from 'react';
 import { ConnectionProvider, WalletProvider } from '@solana/wallet-adapter-react';
 import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
-import {
-  PhantomWalletAdapter,
-  SolflareWalletAdapter,
-  TorusWalletAdapter,
-  LedgerWalletAdapter,
-  Coin98WalletAdapter,
-  MathWalletAdapter,
-} from '@solana/wallet-adapter-wallets';
+// Import wallet adapters individually to avoid pulling in unused dependencies
+import { PhantomWalletAdapter } from '@solana/wallet-adapter-phantom';
+import { SolflareWalletAdapter } from '@solana/wallet-adapter-solflare';
+import { LedgerWalletAdapter } from '@solana/wallet-adapter-ledger';
 import { WalletModalProvider } from '@solana/wallet-adapter-react-ui';
 import { clusterApiUrl } from '@solana/web3.js';
 
@@ -36,13 +32,11 @@ const WalletContextProvider: FC<Props> = ({ children }) => {
       const walletAdapters = [
         new PhantomWalletAdapter(),
         new SolflareWalletAdapter({ network }),
-        // Exclude Torus adapter as it might be including MetaMask detection
-        // new TorusWalletAdapter(),
         new LedgerWalletAdapter(),
-        new Coin98WalletAdapter(),
-        new MathWalletAdapter(),
-        // BackpackWalletAdapter is temporarily disabled as mentioned in the master prompt
-        // new BackpackWalletAdapter(),
+        // Removed adapters that cause deprecation warnings:
+        // - TorusWalletAdapter uses deprecated @toruslabs/solana-embed
+        // - Coin98WalletAdapter and MathWalletAdapter may have deprecated deps
+        // - BackpackWalletAdapter is temporarily disabled as mentioned in the master prompt
       ];
       
       // Deduplicate wallets by name to prevent React key conflicts
