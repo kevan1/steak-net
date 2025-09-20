@@ -274,7 +274,7 @@ const LiquidSteakTokenSelectorEnhanced: React.FC<TokenSelectorProps> = ({
             {/* Stake Section */}
             <div className="mb-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-medium text-gray-300">Stake {selectedToken.symbol}</h3>
+                <h3 className="text-lg font-medium text-gray-300">Stake SOL</h3>
                 <button
                   onClick={handleSearchClick}
                   className="px-4 py-2 text-sm font-medium text-white bg-sub-card rounded-lg transition-all duration-200 hover:bg-glass-bg-hover border border-purple-500/50 hover:border-purple-400 backdrop-blur-md hover:scale-105"
@@ -428,9 +428,9 @@ const LiquidSteakTokenSelectorEnhanced: React.FC<TokenSelectorProps> = ({
                     Processing Swap...
                   </span>
                 ) : !swapAmount || parseFloat(swapAmount) <= 0 ? (
-                  'Enter amount to swap'
+                  'Enter amount to stake'
                 ) : (
-                  `Swap ${swapAmount} ${selectedToken.symbol} for STEAKSOL`
+                  `Stake ${swapAmount} ${selectedToken.symbol}`
                 )}
               </button>
             )}

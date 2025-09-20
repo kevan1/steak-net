@@ -292,7 +292,7 @@ export default function SteakNetLanding() {
               </h2>
             </div>
             <Button size="lg" className="text-lg px-8 py-6 font-poppins" onClick={() => scrollToSection("hero")}>
-              Swap to STEAKSOL
+              Stake SOL Now
             </Button>
           </div>
         </div>

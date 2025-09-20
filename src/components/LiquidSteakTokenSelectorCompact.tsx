@@ -424,7 +424,7 @@ const LiquidSteakTokenSelectorCompact: React.FC<TokenSelectorProps> = ({
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <label className="text-sm text-muted-foreground font-medium font-poppins">
-                {isReversed ? 'STEAKSOL' : (selectedToken?.name || 'From')}
+                {isReversed ? 'Unstake SOL' : 'Stake SOL'}
               </label>
             </div>
             <div className="bg-background/80 rounded-xl p-3 space-y-2">
@@ -498,7 +498,7 @@ const LiquidSteakTokenSelectorCompact: React.FC<TokenSelectorProps> = ({
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <label className="text-sm text-muted-foreground font-medium font-poppins">
-                {isReversed ? (selectedToken?.name || 'To') : 'STEAKSOL'}
+                Receive
               </label>
             </div>
             <div className="bg-background/80 rounded-xl p-3 space-y-2">
