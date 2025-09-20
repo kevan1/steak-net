@@ -5,6 +5,7 @@ import { GeistMono } from "geist/font/mono"
 import localFont from "next/font/local"
 import { Analytics } from "@vercel/analytics/next"
 import { Suspense } from "react"
+import WalletContextProvider from "@/src/components/WalletContextProvider"
 import "./globals.css"
 
 const steakFont = localFont({
@@ -35,7 +36,9 @@ export default function RootLayout({
       <body
         className={`font-sans ${GeistSans.variable} ${GeistMono.variable} ${steakFont.variable} ${poppinsFont.variable}`}
       >
-        <Suspense fallback={null}>{children}</Suspense>
+        <WalletContextProvider>
+          <Suspense fallback={null}>{children}</Suspense>
+        </WalletContextProvider>
         <Analytics />
       </body>
     </html>
