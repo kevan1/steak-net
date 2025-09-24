@@ -448,9 +448,27 @@ const LiquidSteakTokenSelectorCompact: React.FC<TokenSelectorProps> = ({
             <div className="bg-background/80 rounded-xl p-3 space-y-2">
               <div className="flex items-center justify-between">
                 <input
+                  type="text"
                   placeholder="0"
                   value={swapAmount}
-                  onChange={(e) => setSwapAmount(e.target.value)}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    // Allow only numbers and one decimal point, with max limit of 1,000,000
+                    if (value === '' || (/^\d*\.?\d*$/.test(value) && parseFloat(value) <= 1000000)) {
+                      setSwapAmount(value);
+                    }
+                  }}
+                  onKeyDown={(e) => {
+                    // Prevent non-numeric characters except for navigation keys
+                    const allowedKeys = ['Backspace', 'Delete', 'Tab', 'Escape', 'Enter', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'];
+                    if (!allowedKeys.includes(e.key) && !/[0-9.]/.test(e.key)) {
+                      e.preventDefault();
+                    }
+                    // Prevent multiple decimal points
+                    if (e.key === '.' && swapAmount.includes('.')) {
+                      e.preventDefault();
+                    }
+                  }}
                   className="bg-transparent text-3xl font-bold text-foreground placeholder:text-muted-foreground border-none outline-none w-full font-poppins"
                 />
                 <button
