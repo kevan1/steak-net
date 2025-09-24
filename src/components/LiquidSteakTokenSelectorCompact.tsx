@@ -60,7 +60,9 @@ const LiquidSteakTokenSelectorCompact: React.FC<TokenSelectorProps> = ({
   const { 
     swapTokens, 
     transactionStatus, 
-    isSwapping, 
+    isSwapping,
+    quoteComparison,
+    getQuote,
     error: swapError, 
     clearError 
   } = useSwap();
@@ -325,6 +327,22 @@ const LiquidSteakTokenSelectorCompact: React.FC<TokenSelectorProps> = ({
     updateBalances();
   }, [connected, publicKey, selectedToken]);
 
+  // Fetch quote comparison when amount changes
+  useEffect(() => {
+    const fetchQuoteComparison = async () => {
+      if (!selectedToken || !swapAmount || parseFloat(swapAmount) <= 0) return;
+      
+      const fromToken = isReversed ? STEAKSOL_TOKEN : selectedToken;
+      const toToken = isReversed ? selectedToken : STEAKSOL_TOKEN;
+      
+      // Get fresh quotes for comparison
+      await getQuote(fromToken, toToken, swapAmount);
+    };
+    
+    const timeoutId = setTimeout(fetchQuoteComparison, 500); // Debounce for 500ms
+    return () => clearTimeout(timeoutId);
+  }, [swapAmount, selectedToken, isReversed, getQuote]);
+
   // Get current token balance
   const getCurrentTokenBalance = () => {
     const currentToken = isReversed ? STEAKSOL_TOKEN : selectedToken;
@@ -504,21 +522,33 @@ const LiquidSteakTokenSelectorCompact: React.FC<TokenSelectorProps> = ({
             <div className="bg-background/80 rounded-xl p-3 space-y-2">
               <div className="flex items-center justify-between">
                 <div className="text-3xl font-bold text-foreground font-poppins">
-                  {swapAmount && parseFloat(swapAmount) > 0 && selectedToken && solPrice && steaksolPrice
-                    ? (() => {
-                        if (isReversed) {
-                          // STEAKSOL → Selected Token
-                          const inputUSDValue = parseFloat(swapAmount) * steaksolPrice;
-                          const outputAmount = (inputUSDValue * 0.98) / (selectedToken.symbol === 'SOL' ? solPrice : (solPrice * (selectedToken.exchangeRate || 1)));
-                          return outputAmount.toFixed(6);
-                        } else {
-                          // Selected Token → STEAKSOL
-                          const inputUSDValue = parseFloat(swapAmount) * (selectedToken.symbol === 'SOL' ? solPrice : (solPrice * (selectedToken.exchangeRate || 1)));
-                          const steaksolAmount = (inputUSDValue * 0.98) / steaksolPrice;
-                          return steaksolAmount.toFixed(6);
-                        }
-                      })()
-                    : '0'
+                  {(() => {
+                    // First try to use actual quote data if available
+                    if (quoteComparison && quoteComparison.bestQuote && swapAmount && parseFloat(swapAmount) > 0) {
+                      const bestQuote = quoteComparison.bestQuote;
+                      if (bestQuote.outAmt) {
+                        const outputAmount = parseFloat(bestQuote.outAmt) / 1_000_000_000;
+                        return outputAmount.toFixed(6);
+                      }
+                    }
+                    
+                    // Fallback to price-based estimation
+                    if (swapAmount && parseFloat(swapAmount) > 0 && selectedToken && solPrice && steaksolPrice) {
+                      if (isReversed) {
+                        // STEAKSOL → Selected Token
+                        const inputUSDValue = parseFloat(swapAmount) * steaksolPrice;
+                        const outputAmount = (inputUSDValue * 0.97) / (selectedToken.symbol === 'SOL' ? solPrice : (solPrice * (selectedToken.exchangeRate || 1)));
+                        return outputAmount.toFixed(6);
+                      } else {
+                        // Selected Token → STEAKSOL  
+                        const inputUSDValue = parseFloat(swapAmount) * (selectedToken.symbol === 'SOL' ? solPrice : (solPrice * (selectedToken.exchangeRate || 1)));
+                        const steaksolAmount = (inputUSDValue * 0.97) / steaksolPrice;
+                        return steaksolAmount.toFixed(6);
+                      }
+                    }
+                    
+                    return '0';
+                  })()
                   }
                 </div>
                 <button
@@ -537,22 +567,43 @@ const LiquidSteakTokenSelectorCompact: React.FC<TokenSelectorProps> = ({
                 </button>
               </div>
               <div className="text-sm text-muted-foreground font-poppins">
-                {priceLoading ? (
-                  <span className="flex items-center gap-1">
-                    <div className="w-3 h-3 border border-gray-400 border-t-transparent rounded-full animate-spin"></div>
-                    Loading price...
-                  </span>
-                ) : swapAmount && parseFloat(swapAmount) > 0 && selectedToken ? (
-                  formatUSD(calculateUSDValue(
-                    parseFloat(swapAmount) * 0.98,
-                    isReversed ? (selectedToken.symbol === 'SOL' ? solPrice : (solPrice * (selectedToken.exchangeRate || 1))) : steaksolPrice
-                  ))
-                ) : (
-                  '~$0'
-                )}
+                <div className="flex items-center justify-between">
+                  <div>
+                    {priceLoading ? (
+                      <span className="flex items-center gap-1">
+                        <div className="w-3 h-3 border border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+                        Loading price...
+                      </span>
+                    ) : (() => {
+                  // Use actual quote output amount for USD calculation if available
+                  if (quoteComparison && quoteComparison.bestQuote && swapAmount && parseFloat(swapAmount) > 0) {
+                    const bestQuote = quoteComparison.bestQuote;
+                    if (bestQuote.outAmt) {
+                      const outputAmount = parseFloat(bestQuote.outAmt) / 1_000_000_000;
+                      const tokenPrice = isReversed ? 
+                        (selectedToken?.symbol === 'SOL' ? solPrice : (solPrice * (selectedToken?.exchangeRate || 1))) : 
+                        steaksolPrice;
+                      return formatUSD(calculateUSDValue(outputAmount, tokenPrice));
+                    }
+                  }
+                  
+                  // Fallback to estimation
+                  if (swapAmount && parseFloat(swapAmount) > 0 && selectedToken) {
+                    return formatUSD(calculateUSDValue(
+                      parseFloat(swapAmount) * 0.97,
+                      isReversed ? (selectedToken.symbol === 'SOL' ? solPrice : (solPrice * (selectedToken.exchangeRate || 1))) : steaksolPrice
+                    ));
+                  }
+                  
+                  return '~$0';
+                    })()
+                  }
+                  </div>
+                </div>
               </div>
             </div>
           </div>
+
 
           {/* Connect Wallet / Swap Button */}
           <div className="flex justify-center">

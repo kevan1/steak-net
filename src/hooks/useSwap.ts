@@ -5,6 +5,7 @@ import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { Transaction, VersionedTransaction, PublicKey, LAMPORTS_PER_SOL } from '@solana/web3.js';
 import { TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import { LSTToken, SwapQuote, TransactionStatus } from '@/src/types';
+import { quoteComparison } from '@/src/services/quoteComparison';
 import { sanctumApi } from '@/src/services/sanctumApi';
 
 export interface UseSwapReturn {
@@ -14,6 +15,11 @@ export interface UseSwapReturn {
   transactionStatus: TransactionStatus;
   isSwapping: boolean;
   lastQuote: SwapQuote | null;
+  quoteComparison: {
+    bestQuote: SwapQuote | null;
+    recommendation: string;
+    allQuotes: any[];
+  } | null;
   error: string | null;
   clearError: () => void;
 }
@@ -25,6 +31,11 @@ export function useSwap(): UseSwapReturn {
   const [transactionStatus, setTransactionStatus] = useState<TransactionStatus>({ status: 'idle' });
   const [isSwapping, setIsSwapping] = useState(false);
   const [lastQuote, setLastQuote] = useState<SwapQuote | null>(null);
+  const [quoteComparisonData, setQuoteComparisonData] = useState<{
+    bestQuote: SwapQuote | null;
+    recommendation: string;
+    allQuotes: any[];
+  } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const clearError = useCallback(() => {
@@ -68,7 +79,7 @@ export function useSwap(): UseSwapReturn {
     }
   }, [publicKey, connection]);
 
-  const getQuote = useCallback(async (
+const getQuote = useCallback(async (
     fromToken: LSTToken,
     toToken: LSTToken,
     amount: string
@@ -81,9 +92,6 @@ export function useSwap(): UseSwapReturn {
     try {
       clearError();
       
-      // Convert amount to lamports/smallest unit (9 decimals for SOL/LST)
-      const amountInLamports = Math.floor(parseFloat(amount) * 1_000_000_000).toString();
-      
       // Validate inputs
       if (!fromToken.mint || !toToken.mint) {
         throw new Error('Invalid token mints');
@@ -93,17 +101,22 @@ export function useSwap(): UseSwapReturn {
         throw new Error('Amount must be greater than 0');
       }
 
-      // Prioritize Jupiter for reliable swap execution, fallback to others
-      const quote = await sanctumApi.getSwapQuote(
-        fromToken.mint,
-        toToken.mint,
-        amountInLamports,
-        100, // 1% slippage for better execution
-        ['Jup', 'SanctumRouter', 'Inf'] // Jupiter first for most reliable execution
+      // Compare quotes from multiple providers
+      const comparisonResult = await quoteComparison.compareQuotes(
+        fromToken,
+        toToken,
+        amount,
+        100 // 1% slippage for better execution
       );
 
-      setLastQuote(quote);
-      return quote;
+      // Store the comparison data for UI display
+      setQuoteComparisonData(comparisonResult);
+      
+      // Store the best quote as the last quote
+      const bestQuote = comparisonResult.bestQuote;
+      setLastQuote(bestQuote);
+      
+      return bestQuote;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to get quote';
       setError(errorMessage);
@@ -142,97 +155,19 @@ export function useSwap(): UseSwapReturn {
         throw new Error('Failed to get swap quote');
       }
 
-      // Build the Jupiter transaction based on the Sanctum quote
+      // Build transaction for the best quote
       setTransactionStatus({ status: 'preparing' });
       
-      // Check which swap source was used and handle accordingly
-      const swapSrc = quote.swapSrcData?.swapSrc;
-      const swapData = quote.swapSrcData?.data;
+      // Get transaction for the best quote (handles multiple providers)
+      const swapTxResult = await quoteComparison.getSwapTransaction(quote, publicKey.toString());
       
-      if (!swapData) {
-        throw new Error('No swap data found in quote');
+      if (!swapTxResult) {
+        throw new Error('Failed to build swap transaction');
       }
       
-      let swapResponse;
+      console.log(`Using ${swapTxResult.provider} provider for swap execution`);
       
-      if (swapSrc === 'Jup') {
-        // Jupiter swap - use Jupiter API
-        setTransactionStatus({ status: 'preparing' });
-        
-        const jupiterResponse = await fetch('https://quote-api.jup.ag/v6/swap', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            quoteResponse: swapData,
-            userPublicKey: publicKey.toString(),
-            wrapAndUnwrapSol: true,
-            dynamicComputeUnitLimit: true,
-            prioritizationFeeLamports: 'auto'
-          })
-        });
-        
-        if (!jupiterResponse.ok) {
-          const errorText = await jupiterResponse.text();
-          throw new Error(`Jupiter API error: ${jupiterResponse.status} - ${errorText}`);
-        }
-        
-        swapResponse = await jupiterResponse.json();
-        
-      } else if (swapSrc === 'Inf') {
-        // Infinite swap - try to use Jupiter as fallback since Infinite endpoint might not be available
-        
-        try {
-          // Try to get a Jupiter quote directly
-          const jupiterQuoteResponse = await fetch(`https://quote-api.jup.ag/v6/quote?inputMint=${fromToken.mint}&outputMint=${toToken.mint}&amount=${Math.floor(parseFloat(amount) * 1_000_000_000)}&slippageBps=100`);
-          
-          if (!jupiterQuoteResponse.ok) {
-            throw new Error(`Jupiter quote API error: ${jupiterQuoteResponse.status}`);
-          }
-          
-          const jupiterQuote = await jupiterQuoteResponse.json();
-          
-          // Build Jupiter transaction
-          const jupiterSwapResponse = await fetch('https://quote-api.jup.ag/v6/swap', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              quoteResponse: jupiterQuote,
-              userPublicKey: publicKey.toString(),
-              wrapAndUnwrapSol: true,
-              dynamicComputeUnitLimit: true,
-              prioritizationFeeLamports: 'auto'
-            })
-          });
-          
-          if (!jupiterSwapResponse.ok) {
-            const errorText = await jupiterSwapResponse.text();
-            throw new Error(`Jupiter swap API error: ${jupiterSwapResponse.status} - ${errorText}`);
-          }
-          
-          swapResponse = await jupiterSwapResponse.json();
-          
-        } catch (fallbackError) {
-          console.error('Jupiter fallback failed:', fallbackError);
-          throw new Error(`Infinite swap not available and Jupiter fallback failed: ${fallbackError instanceof Error ? fallbackError.message : 'Unknown error'}`);
-        }
-        
-      } else if (swapSrc === 'SanctumRouter') {
-        // Sanctum Router - might have transaction directly in the data
-        
-        if (swapData.transaction) {
-          // Transaction is provided directly
-          swapResponse = { swapTransaction: swapData.transaction };
-        } else {
-          // Need to build transaction or use different approach
-          throw new Error(`Sanctum Router swap source not yet fully implemented. Data: ${JSON.stringify(swapData, null, 2)}`);
-        }
-      } else {
-        throw new Error(`Unknown swap source: ${swapSrc}`);
-      }
+      const swapResponse = { swapTransaction: swapTxResult.swapTransaction };
       
       // Deserialize and sign the transaction
       setTransactionStatus({ status: 'signing' });
@@ -324,6 +259,7 @@ export function useSwap(): UseSwapReturn {
     transactionStatus,
     isSwapping,
     lastQuote,
+    quoteComparison: quoteComparisonData,
     error,
     clearError
   };
