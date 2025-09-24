@@ -58,7 +58,9 @@ const LiquidSteakTokenSelectorEnhanced: React.FC<TokenSelectorProps> = ({
   const { 
     swapTokens, 
     transactionStatus, 
-    isSwapping, 
+    isSwapping,
+    quoteComparison,
+    getQuote,
     error: swapError, 
     clearError 
   } = useSwap();
@@ -185,6 +187,19 @@ const LiquidSteakTokenSelectorEnhanced: React.FC<TokenSelectorProps> = ({
       }
     }
   }, []); // Empty dependency array means this runs once on mount
+
+  // Fetch quote comparison when amount changes
+  useEffect(() => {
+    const fetchQuoteComparison = async () => {
+      if (!selectedToken || !swapAmount || parseFloat(swapAmount) <= 0) return;
+      
+      // Get fresh quotes for comparison (always SOL -> STEAKSOL for enhanced component)
+      await getQuote(selectedToken, STEAKSOL_TOKEN, swapAmount);
+    };
+    
+    const timeoutId = setTimeout(fetchQuoteComparison, 500); // Debounce for 500ms
+    return () => clearTimeout(timeoutId);
+  }, [swapAmount, selectedToken, getQuote]);
 
   // Handle search input click - show token list
   const handleSearchClick = () => {
@@ -350,14 +365,25 @@ const LiquidSteakTokenSelectorEnhanced: React.FC<TokenSelectorProps> = ({
               <div className="mb-4">
                 <div className="flex items-center justify-between gap-2">
                   <div className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white flex-1 min-w-0">
-                    {swapAmount && parseFloat(swapAmount) > 0 && selectedToken && solPrice && steaksolPrice
-                      ? (() => {
-                          const inputUSDValue = parseFloat(swapAmount) * (selectedToken.symbol === 'SOL' ? solPrice : (solPrice * (selectedToken.exchangeRate || 1)));
-                          const steaksolAmount = (inputUSDValue * 0.98) / steaksolPrice; // 2% slippage buffer
-                          return steaksolAmount.toFixed(6);
-                        })()
-                      : '0'
-                    }
+                    {(() => {
+                      // First try to use actual quote data if available
+                      if (quoteComparison && quoteComparison.bestQuote && swapAmount && parseFloat(swapAmount) > 0) {
+                        const bestQuote = quoteComparison.bestQuote;
+                        if (bestQuote.outAmt) {
+                          const outputAmount = parseFloat(bestQuote.outAmt) / 1_000_000_000;
+                          return outputAmount.toFixed(6);
+                        }
+                      }
+                      
+                      // Fallback to price-based estimation
+                      if (swapAmount && parseFloat(swapAmount) > 0 && selectedToken && solPrice && steaksolPrice) {
+                        const inputUSDValue = parseFloat(swapAmount) * (selectedToken.symbol === 'SOL' ? solPrice : (solPrice * (selectedToken.exchangeRate || 1)));
+                        const steaksolAmount = (inputUSDValue * 0.97) / steaksolPrice; // Conservative estimate
+                        return steaksolAmount.toFixed(6);
+                      }
+                      
+                      return '0';
+                    })()}
                   </div>
                   <div className="flex items-center gap-2 ml-2 flex-shrink-0">
                     {STEAKSOL_TOKEN.logoUri ? (
@@ -379,22 +405,70 @@ const LiquidSteakTokenSelectorEnhanced: React.FC<TokenSelectorProps> = ({
                   </div>
                 </div>
                 <div className="text-gray-400 text-sm mt-1">
-                  {priceLoading ? (
-                    <span className="flex items-center gap-1">
-                      <div className="w-3 h-3 border border-gray-400 border-t-transparent rounded-full animate-spin"></div>
-                      Loading price...
-                    </span>
-                  ) : swapAmount && parseFloat(swapAmount) > 0 && selectedToken ? (
-                    formatUSD(calculateUSDValue(
-                      parseFloat(swapAmount) * 0.98, // 2% slippage buffer
-                      steaksolPrice // Use STEAKSOL price for receive section
-                    ))
-                  ) : (
-                    '~$0'
-                  )}
+                  <div className="flex items-center justify-between">
+                    <div>
+                      {priceLoading ? (
+                        <span className="flex items-center gap-1">
+                          <div className="w-3 h-3 border border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+                          Loading price...
+                        </span>
+                      ) : (() => {
+                    // Use actual quote output amount for USD calculation if available
+                    if (quoteComparison && quoteComparison.bestQuote && swapAmount && parseFloat(swapAmount) > 0) {
+                      const bestQuote = quoteComparison.bestQuote;
+                      if (bestQuote.outAmt) {
+                        const outputAmount = parseFloat(bestQuote.outAmt) / 1_000_000_000;
+                        return formatUSD(calculateUSDValue(outputAmount, steaksolPrice));
+                      }
+                    }
+                    
+                    // Fallback to estimation
+                    if (swapAmount && parseFloat(swapAmount) > 0 && selectedToken) {
+                      return formatUSD(calculateUSDValue(
+                        parseFloat(swapAmount) * 0.97, // Conservative estimate
+                        steaksolPrice
+                      ));
+                    }
+                    
+                    return '~$0';
+                      })()
+                    }
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
+
+            {/* Quote Comparison Display */}
+            {quoteComparison && quoteComparison.recommendation && swapAmount && parseFloat(swapAmount) > 0 && (
+              <div className="bg-primary/10 border border-primary/20 rounded-lg p-4 mb-6">
+                <div className="text-sm text-primary font-medium mb-2">🔍 Best Quote Found:</div>
+                <div className="text-sm text-muted-foreground mb-3">{quoteComparison.recommendation}</div>
+                {quoteComparison.allQuotes && quoteComparison.allQuotes.length > 1 && (
+                  <div className="space-y-2">
+                    <div className="text-xs text-muted-foreground font-medium">Provider Comparison:</div>
+                    {quoteComparison.allQuotes.map((quote, index) => (
+                      <div key={index} className="flex justify-between items-center text-sm">
+                        <div className="flex items-center gap-2">
+                          <span className={`${quote.outputAmount === 0 ? 'text-red-400' : 'text-green-400'}`}>
+                            {quote.error ? '❌' : '✅'}
+                          </span>
+                          <span className="text-foreground font-medium">{quote.provider}</span>
+                          {quote.priceImpact !== undefined && (
+                            <span className="text-xs text-muted-foreground">({quote.priceImpact.toFixed(2)}% impact)</span>
+                          )}
+                        </div>
+                        {quote.outputAmount > 0 ? (
+                          <span className="text-foreground font-mono">{quote.outputAmount.toFixed(6)} STEAKSOL</span>
+                        ) : (
+                          <span className="text-red-400 text-xs">{quote.error || 'Failed'}</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Connect Wallet / Swap Button */}
             {!connected ? (
