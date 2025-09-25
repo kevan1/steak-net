@@ -24,6 +24,11 @@ export const metadata: Metadata = {
   title: "Steak.Net",
   description: "Stake SOL. Earn SOL. Earn STEAK.",
   generator: "v0.app",
+  icons: {
+    icon: "/steak-favicon.png",
+    shortcut: "/steak-favicon.png",
+    apple: "/steak-favicon.png",
+  },
 }
 
 export default function RootLayout({
