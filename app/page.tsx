@@ -28,6 +28,32 @@ export default function SteakNetLanding() {
     }
   }
 
+  // Minimal bridge: trigger the same action as the Swapper's "Connect Wallet" button
+  const triggerSwapperConnectWallet = () => {
+    // Try common selectors first
+    const selectors = [
+      '[data-connect-wallet]',
+      '[data-testid="connect-wallet"]',
+      '[aria-label="Connect Wallet"]',
+    ]
+    for (const selector of selectors) {
+      const el = document.querySelector(selector) as HTMLButtonElement | null
+      if (el) {
+        el.click()
+        return
+      }
+    }
+    // Fallback: find a button with visible text "Connect Wallet"
+    const buttons = Array.from(document.querySelectorAll('button')) as HTMLButtonElement[]
+    const connectBtn = buttons.find((b) => (b.textContent || '').trim().toLowerCase().includes('connect wallet'))
+    if (connectBtn) {
+      connectBtn.click()
+      return
+    }
+    // Last resort: emit a generic event some UIs listen for
+    window.dispatchEvent(new CustomEvent('open-wallet-modal'))
+  }
+
   const howItWorksSteps = [
     {
       step: "Step 1",
@@ -87,7 +113,7 @@ export default function SteakNetLanding() {
               >
                 STEAK
               </button>
-              <a href="/docs" className="text-foreground hover:text-primary transition-colors font-poppins">
+              <a href="https://steaknet.gitbook.io/steaknet/" target="_blank" rel="noopener noreferrer" className="text-foreground hover:text-primary transition-colors font-poppins">
                 DOCS
               </a>
             </div>
@@ -122,7 +148,7 @@ export default function SteakNetLanding() {
                 Powered by STEAKSOL
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
-                <Button size="lg" className="text-lg px-8 py-6 font-poppins" onClick={() => scrollToSection("hero")}>
+                <Button size="lg" className="text-lg px-8 py-6 font-poppins" onClick={triggerSwapperConnectWallet}>
                   Stake SOL
                 </Button>
                 <Button
@@ -266,7 +292,7 @@ export default function SteakNetLanding() {
             />
           </div>
           <Button variant="secondary" size="lg" asChild>
-            <a href="/docs#steak" className="text-lg px-8 py-6 font-poppins">
+            <a href="https://steaknet.gitbook.io/steaknet/usdsteak-token/what-is-steak" target="_blank" rel="noopener noreferrer" className="text-lg px-8 py-6 font-poppins">
               Learn more
             </a>
           </Button>
