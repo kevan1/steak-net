@@ -164,19 +164,19 @@ export default function SteakNetLanding() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <Card className="glass-card rounded-2xl">
               <CardContent className="p-8 text-center">
-                <div className="text-3xl md:text-4xl font-bold text-foreground mb-2 font-poppins">1,234,567</div>
+                <div className="text-3xl md:text-4xl font-bold text-foreground mb-2 font-poppins">225,923</div>
                 <div className="text-muted-foreground font-poppins">SOL Staked</div>
               </CardContent>
             </Card>
             <Card className="glass-card rounded-2xl">
               <CardContent className="p-8 text-center">
-                <div className="text-3xl md:text-4xl font-bold text-foreground mb-2 font-poppins">456</div>
+                <div className="text-3xl md:text-4xl font-bold text-foreground mb-2 font-poppins">164</div>
                 <div className="text-muted-foreground font-poppins">Epochs Served</div>
               </CardContent>
             </Card>
             <Card className="glass-card rounded-2xl">
               <CardContent className="p-8 text-center">
-                <div className="text-3xl md:text-4xl font-bold text-foreground mb-2 font-poppins">8,901</div>
+                <div className="text-3xl md:text-4xl font-bold text-foreground mb-2 font-poppins">232</div>
                 <div className="text-muted-foreground font-poppins">SteakNet Stakers</div>
               </CardContent>
             </Card>
