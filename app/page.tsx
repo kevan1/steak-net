@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
+import LegalModal from "@/components/legal/LegalModal"
+import { PRIVACY_TEXT, TERMS_TEXT } from "@/content/legal/legalText"
 import { Card, CardContent } from "@/components/ui/card"
 import LiquidSteakTokenSelectorCompact from "@/src/components/LiquidSteakTokenSelectorCompact"
 import ClientOnly from "@/src/components/ClientOnly"
@@ -74,6 +76,9 @@ export default function SteakNetLanding() {
         "Hold STEAKSOL and watch it grow in value every epoch as staking rewards compound automatically. On top of that, every epoch you also earn STEAK, a loyalty reward for SteakNet stakers.",
     },
   ]
+
+  const [isPrivacyOpen, setIsPrivacyOpen] = useState(false)
+  const [isTermsOpen, setIsTermsOpen] = useState(false)
 
   return (
     <div className="min-h-screen bg-background gradient-bg">
@@ -348,16 +353,61 @@ export default function SteakNetLanding() {
               >
                 Telegram
               </a>
-              <a href="#" className="text-muted-foreground hover:text-foreground transition-colors font-poppins">
+              <a
+                href="#"
+                className="text-muted-foreground hover:text-foreground transition-colors font-poppins"
+                onClick={(e) => {
+                  e.preventDefault()
+                  setIsPrivacyOpen(true)
+                }}
+              >
                 Privacy Policy
               </a>
-              <a href="#" className="text-muted-foreground hover:text-foreground transition-colors font-poppins">
-                Terms of Service
+              <a
+                href="#"
+                className="text-muted-foreground hover:text-foreground transition-colors font-poppins"
+                onClick={(e) => {
+                  e.preventDefault()
+                  setIsTermsOpen(true)
+                }}
+              >
+                Terms & Conditions
               </a>
             </div>
           </div>
         </div>
       </footer>
+      <LegalPortals isPrivacyOpen={isPrivacyOpen} isTermsOpen={isTermsOpen} onClosePrivacy={() => setIsPrivacyOpen(false)} onCloseTerms={() => setIsTermsOpen(false)} />
     </div>
+  )
+}
+function LegalPortals({
+  isPrivacyOpen,
+  isTermsOpen,
+  onClosePrivacy,
+  onCloseTerms,
+}: {
+  isPrivacyOpen: boolean
+  isTermsOpen: boolean
+  onClosePrivacy: () => void
+  onCloseTerms: () => void
+}) {
+  return (
+    <>
+      <LegalModal
+        isOpen={isPrivacyOpen}
+        onClose={onClosePrivacy}
+        title="Privacy Policy"
+        content={PRIVACY_TEXT}
+        id="privacy-modal-title"
+      />
+      <LegalModal
+        isOpen={isTermsOpen}
+        onClose={onCloseTerms}
+        title="Terms & Conditions"
+        content={TERMS_TEXT}
+        id="terms-modal-title"
+      />
+    </>
   )
 }
