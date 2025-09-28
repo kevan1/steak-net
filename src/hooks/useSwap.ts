@@ -84,11 +84,6 @@ const getQuote = useCallback(async (
     toToken: LSTToken,
     amount: string
   ): Promise<SwapQuote | null> => {
-    if (!publicKey) {
-      setError('Wallet not connected');
-      return null;
-    }
-
     try {
       clearError();
       
@@ -123,7 +118,7 @@ const getQuote = useCallback(async (
       console.error('Error getting swap quote:', err);
       return null;
     }
-  }, [publicKey, clearError]);
+  }, [clearError]);
 
   const swapTokens = useCallback(async (
     fromToken: LSTToken,
