@@ -192,7 +192,7 @@ class QuoteComparisonService {
       // If it's a Jupiter quote through Sanctum, handle it appropriately
       if (provider === 'Jup' && swapData) {
         try {
-          const jupiterSwapResponse = await fetch('https://quote-api.jup.ag/v6/swap', {
+          const jupiterSwapResponse = await fetch('https://lite-api.jup.ag/swap/v1/swap', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json'
