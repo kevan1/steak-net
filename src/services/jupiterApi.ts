@@ -23,7 +23,7 @@ export interface JupiterSwapResponse {
 }
 
 class JupiterApiService {
-  private baseUrl = 'https://quote-api.jup.ag/v6';
+  private baseUrl = 'https://lite-api.jup.ag/swap/v1';
 
   async getQuote(
     inputMint: string,
