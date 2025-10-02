@@ -3,7 +3,7 @@ import { PriceData } from '@/src/types';
 class PriceApiService {
   private baseUrl = 'https://lite-api.jup.ag/price/v3';
   private priceCache = new Map<string, { data: PriceData; timestamp: number }>();
-  private readonly CACHE_DURATION = 30 * 1000; // 30 seconds
+  private readonly CACHE_DURATION = 5 * 1000; // 5 seconds
 
   private getCachedPrice(mint: string): PriceData | null {
     const cached = this.priceCache.get(mint);
@@ -20,10 +20,10 @@ class PriceApiService {
     });
   }
 
-  async getSOLPrice(): Promise<number> {
+  async getSOLPrice(forceFresh = false): Promise<number> {
     const solMint = 'So11111111111111111111111111111111111111112';
     const cached = this.getCachedPrice(solMint);
-    if (cached) {
+    if (cached && !forceFresh) {
       return cached.price;
     }
 
@@ -62,10 +62,10 @@ class PriceApiService {
     }
   }
 
-  async getSTEAKSOLPrice(): Promise<number> {
+  async getSTEAKSOLPrice(forceFresh = false): Promise<number> {
     const steaksolMint = 'sctmqBfQtZj76PaLmepQ7Xskpu8LNMyWsXqFYAuihML';
     const cached = this.getCachedPrice(steaksolMint);
-    if (cached) {
+    if (cached && !forceFresh) {
       return cached.price;
     }
 

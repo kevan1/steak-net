@@ -22,6 +22,7 @@ export interface UseSwapReturn {
   } | null;
   error: string | null;
   clearError: () => void;
+  clearQuotes: () => void;
 }
 
 export function useSwap(): UseSwapReturn {
@@ -40,6 +41,11 @@ export function useSwap(): UseSwapReturn {
 
   const clearError = useCallback(() => {
     setError(null);
+  }, []);
+
+  const clearQuotes = useCallback(() => {
+    setLastQuote(null);
+    setQuoteComparisonData(null);
   }, []);
 
   // Check user's token balance
@@ -256,6 +262,7 @@ const getQuote = useCallback(async (
     lastQuote,
     quoteComparison: quoteComparisonData,
     error,
-    clearError
+    clearError,
+    clearQuotes
   };
 }

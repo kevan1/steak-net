@@ -62,7 +62,8 @@ const LiquidSteakTokenSelectorEnhanced: React.FC<TokenSelectorProps> = ({
     quoteComparison,
     getQuote,
     error: swapError, 
-    clearError 
+    clearError,
+    clearQuotes
   } = useSwap();
 
   // Price functionality
@@ -70,6 +71,7 @@ const LiquidSteakTokenSelectorEnhanced: React.FC<TokenSelectorProps> = ({
     solPrice,
     steaksolPrice,
     loading: priceLoading,
+    refreshing: priceRefreshing,
     formatUSD,
     calculateUSDValue
   } = useUSDPrices();
