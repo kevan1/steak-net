@@ -101,8 +101,8 @@ class PriceApiService {
     // Fallback: Calculate price based on SOL price and exchange rate
     try {
       const solPrice = await this.getSOLPrice();
-      // STEAKSOL typically trades at a premium to SOL, use 1.05x multiplier
-      const estimatedPrice = solPrice * 1.05;
+      // STEAKSOL typically trades at a premium to SOL, use 1.07x multiplier
+      const estimatedPrice = solPrice * 1.07;
       
       const priceData: PriceData = {
         mint: steaksolMint,
