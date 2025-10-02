@@ -1,7 +1,7 @@
-import { PriceData, COINGECKO_API_BASE } from '@/src/types';
+import { PriceData } from '@/src/types';
 
 class PriceApiService {
-  private baseUrl = COINGECKO_API_BASE;
+  private baseUrl = 'https://lite-api.jup.ag/price/v3';
   private priceCache = new Map<string, { data: PriceData; timestamp: number }>();
   private readonly CACHE_DURATION = 30 * 1000; // 30 seconds
 
@@ -28,15 +28,22 @@ class PriceApiService {
     }
 
     try {
-      const response = await fetch(`${this.baseUrl}/simple/price?ids=solana&vs_currencies=usd&include_24hr_change=true`);
+      // Use Jupiter Price API v3 for SOL price
+      const response = await fetch(`https://lite-api.jup.ag/price/v3?ids=${solMint}`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+        },
+        signal: AbortSignal.timeout(5000), // 5 second timeout
+      });
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
       const data = await response.json();
-      const price = data.solana?.usd || 0;
-      const change24h = data.solana?.usd_24h_change || 0;
+      const price = data[solMint]?.usdPrice || 0;
+      const change24h = data[solMint]?.priceChange24h || 0;
 
       const priceData: PriceData = {
         mint: solMint,
@@ -48,7 +55,7 @@ class PriceApiService {
       this.setCachedPrice(solMint, priceData);
       return price;
     } catch (error) {
-      console.error('Error fetching SOL price:', error);
+      console.error('Error fetching SOL price from Jupiter:', error);
       // Return cached price if available, otherwise return 0
       const cached = this.priceCache.get(solMint);
       return cached?.data.price || 0;
@@ -74,7 +81,7 @@ class PriceApiService {
       
       if (jupiterResponse.ok) {
         const jupiterData = await jupiterResponse.json();
-        const jupiterPrice = jupiterData.data?.[steaksolMint]?.price;
+        const jupiterPrice = jupiterData[steaksolMint]?.usdPrice;
         
         if (typeof jupiterPrice === 'number' && jupiterPrice > 0) {
           const priceData: PriceData = {
@@ -135,7 +142,7 @@ class PriceApiService {
       
       if (response.ok) {
         const data = await response.json();
-        const price = data.data?.[mint]?.price;
+        const price = data[mint]?.usdPrice;
         
         if (typeof price === 'number' && price > 0) {
           return price;
@@ -158,6 +165,11 @@ class PriceApiService {
       // Special handling for STEAKSOL
       if (mint === 'sctmqBfQtZj76PaLmepQ7Xskpu8LNMyWsXqFYAuihML') {
         return await this.getSTEAKSOLPrice();
+      }
+
+      // Special handling for SOL
+      if (mint === 'So11111111111111111111111111111111111111112') {
+        return await this.getSOLPrice();
       }
 
       // Try to get price from Jupiter v3 first

@@ -70,7 +70,7 @@ export default function SteakNetPage() {
             <div className="text-4xl mb-4">📈</div>
             <h3 className="text-xl font-bold text-white mb-2 font-poppins">Live Prices</h3>
             <p className="text-gray-400 font-poppins">
-              Real-time pricing from CoinGecko and Jupiter with automatic updates
+              Real-time pricing from Jupiter with automatic updates
             </p>
           </div>
         </div>

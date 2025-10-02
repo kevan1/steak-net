@@ -6,7 +6,7 @@ A liquid staking platform for Solana, allowing users to stake SOL and receive ST
 
 - **Liquid Staking**: Stake SOL → Receive STEAKSOL (liquid stake tokens)
 - **Real Swaps**: Integration with Sanctum and Jupiter for token swaps
-- **Live Pricing**: Real-time pricing from CoinGecko and Jupiter APIs
+- **Live Pricing**: Real-time pricing from Jupiter APIs
 - **Wallet Integration**: Support for Phantom, Solflare, and other Solana wallets
 - **Transaction Tracking**: Real-time transaction status and confirmation
 
@@ -14,7 +14,7 @@ A liquid staking platform for Solana, allowing users to stake SOL and receive ST
 
 - **Frontend**: Next.js 14 (App Router), React, TypeScript, Tailwind CSS
 - **Blockchain**: Solana Web3.js, Wallet Adapter
-- **APIs**: Sanctum Protocol, Jupiter Aggregator, CoinGecko
+- **APIs**: Sanctum Protocol, Jupiter Aggregator
 - **UI**: Lucide React Icons, Custom Glass-morphism Design
 
 ## Prerequisites
@@ -50,8 +50,8 @@ NEXT_PUBLIC_SANCTUM_API_KEY=your_sanctum_api_key
 # Recommended: Premium Solana RPC for better performance
 NEXT_PUBLIC_SOLANA_RPC_URL=your_rpc_endpoint
 
-# Optional: CoinGecko API Key for higher rate limits
-COINGECKO_API_KEY=your_coingecko_api_key
+# Optional: Jupiter API Key for higher rate limits (if needed)
+JUPITER_API_KEY=your_jupiter_api_key
 ```
 
 ### 3. Get API Keys
@@ -127,7 +127,7 @@ steaknet-website/
    |----------|-------|-------------|
    | `NEXT_PUBLIC_SANCTUM_API_KEY` | Your Sanctum API key | Production, Preview, Development |
    | `NEXT_PUBLIC_SOLANA_RPC_URL` | Your RPC endpoint | Production, Preview, Development |
-   | `COINGECKO_API_KEY` | Your CoinGecko key (optional) | Production, Preview, Development |
+   | `JUPITER_API_KEY` | Your Jupiter key (optional) | Production, Preview, Development |
 
 4. **Deploy**:
    - Click **Deploy**
@@ -179,8 +179,8 @@ npm run start
 - **Swap Execution**: Alternative swap routing
 - **Transaction Processing**: Swap transaction handling
 
-### CoinGecko
-- **SOL Price**: Real-time SOL/USD pricing
+### Jupiter Price API
+- **Token Prices**: Real-time SOL, STEAKSOL, and other token pricing
 - **Market Data**: 24h price changes and market info
 
 ## Troubleshooting
