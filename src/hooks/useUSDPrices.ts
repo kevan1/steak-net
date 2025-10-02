@@ -7,6 +7,7 @@ export interface UseUSDPricesReturn {
   solPrice: number;
   steaksolPrice: number;
   loading: boolean;
+  refreshing: boolean;
   error: string | null;
   refreshPrices: () => Promise<void>;
   getLSTPrice: (mint: string, exchangeRate?: number) => Promise<number>;
@@ -19,17 +20,23 @@ export function useUSDPrices(): UseUSDPricesReturn {
   const [solPrice, setSolPrice] = useState<number>(0);
   const [steaksolPrice, setSteaksolPrice] = useState<number>(0);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchPrices = useCallback(async () => {
+  const fetchPrices = useCallback(async (forceFresh = false) => {
     try {
-      setLoading(true);
+      // Only show loading spinner on initial load, not on refreshes
+      if (forceFresh && solPrice === 0 && steaksolPrice === 0) {
+        setLoading(true);
+      } else {
+        setRefreshing(true);
+      }
       setError(null);
       
       // Fetch both SOL and STEAKSOL prices concurrently
       const [solPriceResult, steaksolPriceResult] = await Promise.all([
-        priceApi.getSOLPrice(),
-        priceApi.getSTEAKSOLPrice()
+        priceApi.getSOLPrice(forceFresh),
+        priceApi.getSTEAKSOLPrice(forceFresh)
       ]);
       
       setSolPrice(solPriceResult);
@@ -40,8 +47,9 @@ export function useUSDPrices(): UseUSDPricesReturn {
       console.error('Error fetching prices:', err);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
-  }, []);
+  }, [solPrice, steaksolPrice]);
 
   const refreshPrices = useCallback(async () => {
     await fetchPrices();
@@ -69,10 +77,11 @@ export function useUSDPrices(): UseUSDPricesReturn {
   }, []);
 
   useEffect(() => {
-    fetchPrices();
+    // Force fresh prices on initial load to avoid jarring updates
+    fetchPrices(true);
     
-    // Refresh prices every 30 seconds
-    const interval = setInterval(fetchPrices, 30000);
+    // Refresh prices every 5 seconds (using cached data)
+    const interval = setInterval(() => fetchPrices(false), 5000);
     
     return () => clearInterval(interval);
   }, [fetchPrices]);
@@ -81,6 +90,7 @@ export function useUSDPrices(): UseUSDPricesReturn {
     solPrice,
     steaksolPrice,
     loading,
+    refreshing,
     error,
     refreshPrices,
     getLSTPrice,

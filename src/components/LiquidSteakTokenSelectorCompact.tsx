@@ -64,7 +64,8 @@ const LiquidSteakTokenSelectorCompact: React.FC<TokenSelectorProps> = ({
     quoteComparison,
     getQuote,
     error: swapError, 
-    clearError 
+    clearError,
+    clearQuotes
   } = useSwap();
 
   // Price functionality
@@ -72,6 +73,7 @@ const LiquidSteakTokenSelectorCompact: React.FC<TokenSelectorProps> = ({
     solPrice,
     steaksolPrice,
     loading: priceLoading,
+    refreshing: priceRefreshing,
     formatUSD,
     calculateUSDValue
   } = useUSDPrices();
@@ -244,6 +246,8 @@ const LiquidSteakTokenSelectorCompact: React.FC<TokenSelectorProps> = ({
   const handleSwapDirection = () => {
     setIsReversed(!isReversed);
     setSwapAmount(''); // Clear amount when swapping direction
+    clearError(); // Clear any existing errors
+    clearQuotes(); // Clear existing quotes to prevent showing old data
   };
 
   // Fetch token balances
