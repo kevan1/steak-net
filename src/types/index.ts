@@ -105,4 +105,3 @@ export const STEAKSOL_TOKEN: LSTToken = {
 };
 
 export const SANCTUM_API_BASE = 'https://sanctum-api.ironforge.network';
-export const COINGECKO_API_BASE = 'https://api.coingecko.com/api/v3';
