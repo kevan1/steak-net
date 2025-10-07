@@ -169,8 +169,10 @@ class QuoteComparisonService {
     if (provider === 'Jupiter') {
       // Use Jupiter API directly
       const jupiterQuote = bestQuote.swapSrcData?.data?.quote as JupiterQuote;
+      
       if (jupiterQuote) {
         const swapResponse = await jupiterApi.getSwapTransaction(jupiterQuote, userPublicKey);
+        
         if (swapResponse) {
           return {
             swapTransaction: swapResponse.swapTransaction,
@@ -192,13 +194,22 @@ class QuoteComparisonService {
       // If it's a Jupiter quote through Sanctum, handle it appropriately
       if (provider === 'Jup' && swapData) {
         try {
+          // Ensure the quote has the proper structure for Jupiter API
+          const jupiterQuote = { ...swapData };
+          
+          // Fix platformFee structure if it exists but is malformed
+          if (jupiterQuote.platformFee && !jupiterQuote.platformFee.amount) {
+            // Remove malformed platformFee rather than send incomplete data
+            delete jupiterQuote.platformFee;
+          }
+          
           const jupiterSwapResponse = await fetch('https://lite-api.jup.ag/swap/v1/swap', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-              quoteResponse: swapData,
+              quoteResponse: jupiterQuote,
               userPublicKey,
               wrapAndUnwrapSol: true,
               dynamicComputeUnitLimit: true,
