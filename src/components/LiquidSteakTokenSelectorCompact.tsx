@@ -29,14 +29,6 @@ interface TokenSelectorProps {
   className?: string;
 }
 
-import { SANCTUM_API_BASE } from '@/src/types';
-
-const API_KEY = process.env.NEXT_PUBLIC_SANCTUM_API_KEY;
-
-if (!API_KEY) {
-  throw new Error('NEXT_PUBLIC_SANCTUM_API_KEY environment variable is required');
-}
-
 const LiquidSteakTokenSelectorCompact: React.FC<TokenSelectorProps> = ({ 
   onTokenSelected, 
   className = "" 
@@ -95,7 +87,7 @@ const LiquidSteakTokenSelectorCompact: React.FC<TokenSelectorProps> = ({
       setLoading(true);
       setError(null);
 
-      const response = await fetch(`${SANCTUM_API_BASE}/lsts?apiKey=${API_KEY}`);
+      const response = await fetch('/api/sanctum/lsts');
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -254,7 +246,14 @@ const LiquidSteakTokenSelectorCompact: React.FC<TokenSelectorProps> = ({
   const fetchTokenBalance = async (tokenMint: string) => {
     if (!publicKey || !connected) return 0;
     
-    const rpcUrl = process.env.NEXT_PUBLIC_SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com';
+    const getRpcUrl = () => {
+      if (typeof window !== 'undefined') {
+        return `${window.location.origin}/api/rpc`;
+      }
+      return '/api/rpc';
+    };
+    
+    const rpcUrl = getRpcUrl();
     
     try {
       // For SOL balance
@@ -274,7 +273,7 @@ const LiquidSteakTokenSelectorCompact: React.FC<TokenSelectorProps> = ({
         
         const data = await response.json();
         if (data.result && data.result.value !== undefined) {
-          const balance = data.result.value / 1000000000; // Convert lamports to SOL
+          const balance = data.result.value / 1000000000;
           return balance;
         }
       } else {

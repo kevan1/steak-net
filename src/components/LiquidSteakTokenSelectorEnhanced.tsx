@@ -29,14 +29,6 @@ interface TokenSelectorProps {
   className?: string;
 }
 
-import { SANCTUM_API_BASE } from '@/src/types';
-
-const API_KEY = process.env.NEXT_PUBLIC_SANCTUM_API_KEY;
-
-if (!API_KEY) {
-  throw new Error('NEXT_PUBLIC_SANCTUM_API_KEY environment variable is required');
-}
-
 const LiquidSteakTokenSelectorEnhanced: React.FC<TokenSelectorProps> = ({ 
   onTokenSelected, 
   className = "" 
@@ -93,7 +85,7 @@ const LiquidSteakTokenSelectorEnhanced: React.FC<TokenSelectorProps> = ({
       setLoading(true);
       setError(null);
 
-      const response = await fetch(`${SANCTUM_API_BASE}/lsts?apiKey=${API_KEY}`);
+      const response = await fetch('/api/sanctum/lsts');
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);

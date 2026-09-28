@@ -21,11 +21,15 @@ const WalletContextProvider: FC<Props> = ({ children }) => {
   // Network can be set to 'devnet', 'testnet', or 'mainnet-beta'
   const network = WalletAdapterNetwork.Mainnet;
 
-  // RPC endpoint - use premium endpoint from environment variables
+  // RPC endpoint - use server-side proxy with full URL for build time
   const endpoint = useMemo(() => {
-    const rpcUrl = process.env.NEXT_PUBLIC_SOLANA_RPC_URL;
-    return rpcUrl || clusterApiUrl(network);
-  }, [network]);
+    if (typeof window !== 'undefined') {
+      return `${window.location.origin}/api/rpc`;
+    }
+    // During SSR/build, use a placeholder that will be replaced at runtime
+    // The ConnectionProvider validates the URL format, so we need a valid URL
+    return 'https://placeholder-for-build.local/api/rpc';
+  }, []);
 
   const wallets = useMemo(
     () => {
