@@ -30,11 +30,11 @@ flowchart LR
   U[User browser] -->|Next.js 14 App Router| UI[STEAK.NET UI<br/>landing + swap widget]
   UI --> WA[Solana Wallet Adapter<br/>Phantom · Solflare · Ledger]
   UI --> QC[quoteComparison service]
-  QC -->|/lsts · /swap/token/order| SAN[Sanctum API]
+  QC -->|/api/sanctum proxy| SAN[Sanctum API]
   QC -->|/quote · /swap| JUP[Jupiter Swap API]
   UI -->|price/v3| JPR[Jupiter Price API]
   WA -->|sign tx| UI
-  UI -->|sendRawTransaction / confirm| RPC[Solana RPC<br/>NEXT_PUBLIC_SOLANA_RPC_URL]
+  UI -->|/api/rpc proxy| RPC[Solana RPC<br/>server-side]
   RPC --> SOL[(Solana mainnet<br/>STEAKSOL LST · SteakNet validator)]
   subgraph Vercel
     UI
@@ -113,10 +113,11 @@ npm run dev        # http://localhost:3000
 
 | Name | Required | Purpose |
 |---|---|---|
-| `NEXT_PUBLIC_SANCTUM_API_KEY` | yes | Sanctum API (LST list, quotes, swaps). The app throws on start-up if it is missing. |
-| `NEXT_PUBLIC_SOLANA_RPC_URL` | recommended | RPC endpoint. Falls back to the public mainnet-beta cluster. |
+| `SANCTUM_API_KEY` | yes | Sanctum API (LST list, quotes, swaps). Used server-side in `/api/sanctum` proxy. |
+| `SOLANA_RPC_URL` | recommended | RPC endpoint for server-side `/api/rpc` proxy. Falls back to public mainnet-beta cluster. |
+| `ALLOWED_ORIGINS` | optional | Comma-separated allowed origins for RPC proxy (e.g., `https://example.com`). |
 
-> ⚠️ `NEXT_PUBLIC_*` variables are **inlined into the client bundle** and anyone can read them. Only use keys that are domain- or rate-restricted, or move these calls behind a server route (see the roadmap).
+> ✅ **Security:** API keys are now server-side only. Client requests go through Next.js API routes (`/api/sanctum/...` and `/api/rpc`) that inject credentials on the server.
 
 ## Project structure
 
@@ -142,10 +143,11 @@ next.config.mjs         # web3.js polyfills, image domains
 ## Roadmap / known gaps
 
 - [ ] Serve landing-page stats ("SOL Staked", "Epochs Served", "Stakers") from on-chain or Sanctum data. They are currently hard-coded.
-- [ ] Put the Sanctum API key and RPC URL behind a Next.js route handler so they are not shipped to the browser.
+- [x] ~~Put the Sanctum API key and RPC URL behind a Next.js route handler so they are not shipped to the browser.~~ **(DONE: `/api/sanctum` and `/api/rpc` proxies)**
 - [ ] Turn TypeScript and ESLint checks back on in builds (`ignoreBuildErrors` / `ignoreDuringBuilds` are currently `true`).
 - [ ] Remove unused dependencies and files (`@remix-run/react`, duplicate `next.config.ts`, unused shadcn components). Pin `latest` versions.
-- [ ] Add a `.env.example`, CI (lint + build), and a few unit tests for `quoteComparison` and `priceApi`.
+- [x] ~~Add a `.env.example`~~ **(DONE)**
+- [ ] CI (lint + build), and a few unit tests for `quoteComparison` and `priceApi`.
 - [ ] Show validator APY in the UI (`sanctumApi.getValidatorAPY()` already exists but is not displayed).
 - [ ] Add a screenshot and a license.
 
