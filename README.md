@@ -1,235 +1,154 @@
-# STEAKNET Website 🥩
+# 🥩 STEAK.NET: Liquid staking UI for STEAKSOL on Solana
 
-A liquid staking platform for Solana, allowing users to stake SOL and receive STEAKSOL tokens while earning STEAK rewards.
+**Stake SOL. Earn SOL. Earn STEAK.**
+
+STEAK.NET is the web app for **STEAKSOL**, the liquid staking token (LST) of the SteakNet Solana validator. Users connect a Solana wallet, swap SOL (or another LST) into STEAKSOL in one transaction, and keep a liquid token whose exchange rate against SOL goes up as validator rewards build up each epoch.
+
+🔗 **Live:** [https://steak.net](https://steak.net) · 📚 [Docs](https://steaknet.gitbook.io/steaknet/) · 💬 [Discord](https://discord.gg/steaknet) · 𝕏 [@steaknet](https://x.com/steaknet) · ✈️ [Telegram](https://t.me/steaknet)
+
+<!-- TODO: add a screenshot, e.g. docs/screenshot.png -->
+
+---
 
 ## Features
 
-- **Liquid Staking**: Stake SOL → Receive STEAKSOL (liquid stake tokens)
-- **Real Swaps**: Integration with Sanctum and Jupiter for token swaps
-- **Live Pricing**: Real-time pricing from Jupiter APIs
-- **Wallet Integration**: Support for Phantom, Solflare, and other Solana wallets
-- **Transaction Tracking**: Real-time transaction status and confirmation
+- **Landing page** (`/`) with a hero, a "What is STEAKSOL?" explainer (Stake → Receive STEAKSOL → Gather rewards), a `$STEAK` token section, community links, and Privacy Policy / Terms modals.
+- **Swap widget built into the page.** The home page uses a compact selector (`LiquidSteakTokenSelectorCompact`). A full-page version (`LiquidSteakTokenSelectorEnhanced`) is available at `/steak`.
+- **Best-quote routing.** The app asks for quotes from both **Sanctum** (`/swap/token/order`, routed through `Jup`, `SanctumRouter` and `Inf`) and **Jupiter** (`lite-api.jup.ag/swap/v1`), then picks the quote with the higher output amount. Default slippage is 50 bps.
+- **LST discovery.** The token list comes from Sanctum's `/lsts` endpoint. SOL is the default input and STEAKSOL (`sctmqBfQtZj76PaLmepQ7Xskpu8LNMyWsXqFYAuihML`) is the default output.
+- **Stake and unstake in both directions.** A direction toggle flips the swap between *token → STEAKSOL* and *STEAKSOL → token*. The same quote and routing pipeline is used both ways.
+- **USD pricing.** SOL and STEAKSOL prices come from the Jupiter Price API v3, with a 5-second in-memory cache. If Jupiter has no STEAKSOL price, the app estimates it from the SOL price.
+- **Wallets.** Phantom, Solflare and Ledger via `@solana/wallet-adapter`, with auto-connect, on Solana **mainnet-beta**.
+- **Signing flow.** The app handles both versioned and legacy transactions and signs client-side (non-custodial). It sends with preflight and retries, then waits for `confirmed` commitment.
+- **Transaction status modal** that tracks each stage (building → signing → sending → confirming → success/error) and links to Solana Explorer. Common failures, such as slippage `0x1789`, insufficient balance and simulation errors, are shown as readable messages.
+- **Vercel Analytics** and custom local fonts (Steak font, Poppins, Geist).
 
-## Tech Stack
+## Architecture
 
-- **Frontend**: Next.js 14 (App Router), React, TypeScript, Tailwind CSS
-- **Blockchain**: Solana Web3.js, Wallet Adapter
-- **APIs**: Sanctum Protocol, Jupiter Aggregator
-- **UI**: Lucide React Icons, Custom Glass-morphism Design
+```mermaid
+flowchart LR
+  U[User browser] -->|Next.js 14 App Router| UI[STEAK.NET UI<br/>landing + swap widget]
+  UI --> WA[Solana Wallet Adapter<br/>Phantom · Solflare · Ledger]
+  UI --> QC[quoteComparison service]
+  QC -->|/lsts · /swap/token/order| SAN[Sanctum API]
+  QC -->|/quote · /swap| JUP[Jupiter Swap API]
+  UI -->|price/v3| JPR[Jupiter Price API]
+  WA -->|sign tx| UI
+  UI -->|sendRawTransaction / confirm| RPC[Solana RPC<br/>NEXT_PUBLIC_SOLANA_RPC_URL]
+  RPC --> SOL[(Solana mainnet<br/>STEAKSOL LST · SteakNet validator)]
+  subgraph Vercel
+    UI
+  end
+```
 
-## Prerequisites
+Swap sequence:
 
-- Node.js 18+ and npm/yarn/pnpm
-- A Solana wallet (Phantom, Solflare, etc.)
-- Basic understanding of Solana and DeFi
+```mermaid
+sequenceDiagram
+  participant User
+  participant App as STEAK.NET
+  participant Sanctum
+  participant Jupiter
+  participant Wallet
+  participant RPC as Solana RPC
+  User->>App: amount (SOL → STEAKSOL)
+  par quotes
+    App->>Sanctum: GET /swap/token/order
+    App->>Jupiter: GET /swap/v1/quote
+  end
+  App->>App: pick best outAmount
+  App->>Sanctum: build tx (or Jupiter /swap for Jup route)
+  App->>Wallet: signTransaction (Versioned or legacy)
+  App->>RPC: sendRawTransaction + confirmTransaction
+  App-->>User: status modal + Explorer link
+```
 
-## Environment Setup
+This repository is **frontend only**. It has no backend and no database, and it does not include an on-chain program of its own.
 
-### 1. Clone and Install
+## On-chain components
+
+| Item | Value |
+|---|---|
+| STEAKSOL mint | `sctmqBfQtZj76PaLmepQ7Xskpu8LNMyWsXqFYAuihML` |
+| Wrapped SOL | `So11111111111111111111111111111111111111112` |
+| Cluster | mainnet-beta |
+
+STEAKSOL is a Sanctum-infrastructure LST backed by stake delegated to the SteakNet validator. Minting and redeeming go through Sanctum's routers, so this app does **not** deploy or call any custom Anchor program.
+
+## Tech stack
+
+- **Framework:** Next.js 14 (App Router), React 18, TypeScript
+- **Styling/UI:** Tailwind CSS v4, shadcn/ui (Radix primitives), lucide-react, glassmorphism theme. The initial design was generated with v0.
+- **Solana:** `@solana/web3.js`, `@solana/spl-token`, `@solana/wallet-adapter-*`
+- **Integrations:** Sanctum API, Jupiter Swap API and Price API v3
+- **Hosting:** Vercel (with `@vercel/analytics`)
+- **Browser polyfills:** crypto/stream/http/zlib fallbacks set in `next.config.mjs` for web3.js
+
+## Getting started
+
+### Prerequisites
+
+- Node.js 18.17+ (required by Next.js 14)
+- npm (the repo ships a `package-lock.json`)
+- A Sanctum API key and, ideally, a dedicated Solana RPC endpoint
+
+### Install & run
 
 ```bash
-git clone <your-repo-url>
-cd steaknet-website
+git clone https://github.com/kevan1/<repo>.git
+cd <repo>
 npm install
+# create .env.local with the variables below
+npm run dev        # http://localhost:3000
 ```
 
-### 2. Environment Variables
+| Script | Command |
+|---|---|
+| `npm run dev` | `next dev` |
+| `npm run build` | `next build` |
+| `npm run start` | `next start` |
+| `npm run lint` | `next lint` |
 
-Copy the example environment file:
+### Environment variables (`.env.local`)
 
-```bash
-cp .env.local.example .env.local
-```
+| Name | Required | Purpose |
+|---|---|---|
+| `NEXT_PUBLIC_SANCTUM_API_KEY` | yes | Sanctum API (LST list, quotes, swaps). The app throws on start-up if it is missing. |
+| `NEXT_PUBLIC_SOLANA_RPC_URL` | recommended | RPC endpoint. Falls back to the public mainnet-beta cluster. |
 
-Edit `.env.local` with your values:
+> ⚠️ `NEXT_PUBLIC_*` variables are **inlined into the client bundle** and anyone can read them. Only use keys that are domain- or rate-restricted, or move these calls behind a server route (see the roadmap).
 
-```bash
-# Required: Sanctum API Key
-NEXT_PUBLIC_SANCTUM_API_KEY=your_sanctum_api_key
-
-# Recommended: Premium Solana RPC for better performance
-NEXT_PUBLIC_SOLANA_RPC_URL=your_rpc_endpoint
-
-# Optional: Jupiter API Key for higher rate limits (if needed)
-JUPITER_API_KEY=your_jupiter_api_key
-```
-
-### 3. Get API Keys
-
-**Sanctum API Key:**
-- Visit [Sanctum.so](https://sanctum.so/)
-- Sign up and get your API key
-- **Required**: Set `NEXT_PUBLIC_SANCTUM_API_KEY` in your `.env.local` file
-
-**Premium Solana RPC (Recommended):**
-- [Helius](https://www.helius.dev/) - Free tier available
-- [QuickNode](https://www.quicknode.com/) - Solana endpoint
-- [Alchemy](https://www.alchemy.com/) - Solana support
-- Default (slower): `https://api.mainnet-beta.solana.com`
-
-### 4. Run Development Server
-
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) to see the application.
-
-## Project Structure
+## Project structure
 
 ```
-steaknet-website/
-├── app/                    # Next.js App Router pages
-│   ├── page.tsx           # Homepage with staking interface
-│   └── steak/page.tsx     # Enhanced steak interface
-├── src/
-│   ├── components/        # React components
-│   │   ├── LiquidSteakTokenSelectorCompact.tsx
-│   │   ├── LiquidSteakTokenSelectorEnhanced.tsx
-│   │   ├── WalletContextProvider.tsx
-│   │   └── TransactionStatusModal.tsx
-│   ├── hooks/            # Custom React hooks
-│   │   ├── useSwap.ts    # Swap functionality
-│   │   ├── useUSDPrices.ts
-│   │   └── useTokenData.ts
-│   ├── services/         # API services
-│   │   ├── sanctumApi.ts # Sanctum protocol integration
-│   │   └── priceApi.ts   # Price fetching services
-│   └── types/            # TypeScript type definitions
-└── .env.local.example    # Environment variables template
+app/
+  layout.tsx            # metadata, fonts, WalletContextProvider, Vercel Analytics
+  page.tsx              # landing page + compact swap widget
+  steak/page.tsx        # full-page swap widget
+  globals.css
+components/
+  legal/LegalModal.tsx  # Privacy / Terms modal
+  ui/                   # shadcn/ui primitives
+content/legal/legalText.ts
+src/
+  components/           # LiquidSteakTokenSelector{Compact,Enhanced}, TransactionStatusModal, WalletContextProvider, ClientOnly
+  hooks/                # useSwap, useTokenData, useUSDPrices
+  services/             # sanctumApi, jupiterApi, quoteComparison, priceApi
+  types/index.ts        # shared types + STEAKSOL constants
+public/                 # fonts, favicon, images
+next.config.mjs         # web3.js polyfills, image domains
 ```
 
-## Deployment
+## Roadmap / known gaps
 
-### Deploy to Vercel
+- [ ] Serve landing-page stats ("SOL Staked", "Epochs Served", "Stakers") from on-chain or Sanctum data. They are currently hard-coded.
+- [ ] Put the Sanctum API key and RPC URL behind a Next.js route handler so they are not shipped to the browser.
+- [ ] Turn TypeScript and ESLint checks back on in builds (`ignoreBuildErrors` / `ignoreDuringBuilds` are currently `true`).
+- [ ] Remove unused dependencies and files (`@remix-run/react`, duplicate `next.config.ts`, unused shadcn components). Pin `latest` versions.
+- [ ] Add a `.env.example`, CI (lint + build), and a few unit tests for `quoteComparison` and `priceApi`.
+- [ ] Show validator APY in the UI (`sanctumApi.getValidatorAPY()` already exists but is not displayed).
+- [ ] Add a screenshot and a license.
 
-1. **Push to GitHub**:
-   ```bash
-   git add .
-   git commit -m "Ready for deployment"
-   git push origin main
-   ```
+## Credits
 
-2. **Connect to Vercel**:
-   - Go to [vercel.com](https://vercel.com)
-   - Import your GitHub repository
-   - Vercel will auto-detect Next.js
-
-3. **Set Environment Variables**:
-   - In Vercel Dashboard: **Settings** → **Environment Variables**
-   - Add each variable from `.env.local.example`:
-   
-   | Variable | Value | Environment |
-   |----------|-------|-------------|
-   | `NEXT_PUBLIC_SANCTUM_API_KEY` | Your Sanctum API key | Production, Preview, Development |
-   | `NEXT_PUBLIC_SOLANA_RPC_URL` | Your RPC endpoint | Production, Preview, Development |
-   | `JUPITER_API_KEY` | Your Jupiter key (optional) | Production, Preview, Development |
-
-4. **Deploy**:
-   - Click **Deploy**
-   - Vercel will build and deploy automatically
-   - Each push to `main` triggers a new deployment
-
-### Environment Variable Security
-
-🔒 **Security Best Practices**:
-
-- **NEXT_PUBLIC_*** variables are exposed to the browser
-- Never put private keys in `NEXT_PUBLIC_*` variables
-- Use server-only variables for sensitive data
-- Different values for development/production
-- Keep `.env.local` out of version control
-
-## Development
-
-### Local Development
-
-```bash
-# Install dependencies
-npm install
-
-# Set up environment
-cp .env.local.example .env.local
-# Edit .env.local with your values
-
-# Start development server
-npm run dev
-```
-
-### Building for Production
-
-```bash
-npm run build
-npm run start
-```
-
-## API Integration
-
-### Sanctum Protocol
-- **LST Token Data**: Fetches available liquid staking tokens
-- **Swap Quotes**: Gets swap pricing and routing
-- **Transaction Building**: Constructs swap transactions
-
-### Jupiter Aggregator  
-- **Price Data**: Real-time token pricing
-- **Swap Execution**: Alternative swap routing
-- **Transaction Processing**: Swap transaction handling
-
-### Jupiter Price API
-- **Token Prices**: Real-time SOL, STEAKSOL, and other token pricing
-- **Market Data**: 24h price changes and market info
-
-## Troubleshooting
-
-### Common Issues
-
-**Wallet Connection Issues:**
-```bash
-# Clear browser cache and cookies
-# Try different wallet (Phantom vs Solflare)
-# Check browser console for errors
-```
-
-**API Rate Limits:**
-```bash
-# Get premium RPC endpoint
-# Add CoinGecko API key
-# Check environment variables are set
-```
-
-**Build/Deploy Errors:**
-```bash
-# Verify all environment variables in Vercel
-# Check build logs in Vercel dashboard
-# Ensure TypeScript types are correct
-```
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature-name`
-3. Make changes and test locally
-4. Commit changes: `git commit -m 'Add feature'`
-5. Push to branch: `git push origin feature-name`
-6. Open a Pull Request
-
-## Learn More
-
-### Solana Development
-- [Solana Cookbook](https://solanacookbook.com/)
-- [Anchor Framework](https://www.anchor-lang.com/)
-- [Solana Web3.js](https://solana-labs.github.io/solana-web3.js/)
-
-### DeFi Protocols
-- [Sanctum Documentation](https://docs.sanctum.so/)
-- [Jupiter Documentation](https://docs.jup.ag/)
-- [Liquid Staking Guide](https://solana.com/developers/guides/advanced/liquid-staking)
-
-### Next.js
-- [Next.js Documentation](https://nextjs.org/docs)
-- [Next.js GitHub Repository](https://github.com/vercel/next.js)
-- [Next.js Deployment Documentation](https://nextjs.org/docs/app/building-your-application/deploying)
+Built by the SteakNet team. Initial design and landing page by DS (v0), and swap integration and Sanctum/Jupiter routing by Kevin Anrique ([@kevan1](https://github.com/kevan1)).
