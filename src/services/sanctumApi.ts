@@ -1,17 +1,10 @@
-import { LSTToken, SwapQuote, SwapError, SANCTUM_API_BASE } from '@/src/types';
-
-const SANCTUM_API_KEY = process.env.NEXT_PUBLIC_SANCTUM_API_KEY;
-
-if (!SANCTUM_API_KEY) {
-  throw new Error('NEXT_PUBLIC_SANCTUM_API_KEY environment variable is required');
-}
+import { LSTToken, SwapQuote, SwapError } from '@/src/types';
 
 class SanctumApiService {
-  private baseUrl = SANCTUM_API_BASE;
-  private apiKey = SANCTUM_API_KEY;
+  private baseUrl = '/api/sanctum';
 
   private async makeRequest<T>(endpoint: string, options?: RequestInit): Promise<T> {
-    const url = `${this.baseUrl}${endpoint}${endpoint.includes('?') ? '&' : '?'}apiKey=${this.apiKey}`;
+    const url = `${this.baseUrl}${endpoint}`;
     
     try {
       const response = await fetch(url, {
@@ -140,7 +133,7 @@ class SanctumApiService {
           slippageBps: slippageBps,
           swapSrc: swapSrc
         },
-        fullUrl: `${this.baseUrl}/swap/token/order?${params}&apiKey=${this.apiKey}`
+        fullUrl: `${this.baseUrl}/swap/token/order?${params}`
       });
 
       const response = await this.makeRequest<SwapQuote>(
